@@ -64,8 +64,6 @@ GET  /auth/apts/count
 | Header | Type | Purpose |
 | --- | --- | --- |
 | `Authorization` | `Bearer <jwt>` | Required for all protected routes |
-| `x-domain` | string | Tenant domain override |
-| `x-client-id` | string | OAuth client ID |
 | `x-request-id` | string | Trace ID (auto-generated if omitted) |
 
 ---
