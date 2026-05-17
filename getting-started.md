@@ -40,7 +40,7 @@ npm run script:setup
 
 Edit `.env`. The key variables:
 
-```env
+```bash
 # Gateway
 GATEWAY_API_PORT=3010
 

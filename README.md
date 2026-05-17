@@ -20,9 +20,9 @@ Wenex Platform is a large-scale distributed microservices system built with Nest
 | [Filtering & Pagination](./api/filtering.md) | `query`, `populate`, `projection`, `pagination`, `zone` |
 | [Streaming (SSE)](./api/streaming.md) | Cursor / Server-Sent Events endpoint |
 | **SDK** | |
-| [SDK Guide](./sdk/README.md) | `@wenex/sdk` installation, configuration, and examples |
+| [SDK Guide](./sdk/) | `@wenex/sdk` installation, configuration, and examples |
 | **Services** | |
-| [Service Catalog](./services/README.md) | All 15 microservices — purpose, ports, collections |
+| [Service Catalog](./services/) | All 15 microservices — purpose, ports, collections |
 | **MCP** | |
 | [MCP Integration](./mcp/overview.md) | MCP tools, AI agent usage, `mcp-client.ts` |
 | **Client Development** | |
@@ -70,7 +70,7 @@ GET  /auth/apts/count
 
 ## C4 Diagrams
 
-Architecture diagrams live in [`diagrams/`](../diagrams/):
+Architecture diagrams live in `diagrams/` (at project root):
 
 - [Context Diagram](../diagrams/c4/context-diagram.svg) — system-level actors
 - [Container Diagram](../diagrams/c4/container-diagram.svg) — platform internals
