@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: Wenex Platform
-  text: Developer Documentation
+  text: Documentation
   tagline: Distributed microservices — REST, GraphQL, gRPC, MCP
   actions:
     - theme: brand
