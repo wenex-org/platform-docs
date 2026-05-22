@@ -3,7 +3,7 @@ layout: home
 
 hero:
   name: Wenex Platform
-  text: Developer Documentation
+  text: Documentation
   tagline: Distributed microservices — REST, GraphQL, gRPC, MCP
   actions:
     - theme: brand
@@ -17,7 +17,7 @@ features:
   - title: 15 Microservices
     details: Domain-driven services across auth, identity, financial, content, and more.
   - title: Multi-Protocol Gateway
-    details: Unified REST, GraphQL, and MCP entry point on port 3010.
+    details: Unified REST, GraphQL, and MCP entry point.
   - title: AI-Ready via MCP
     details: Native Model Context Protocol server for Claude and other AI agents.
 ---
