@@ -9,33 +9,33 @@ Wenex Platform consists of 15 domain microservices plus 7 worker processes. All 
 ```mermaid
 graph LR
     subgraph Core Services
-        AUTH[auth\n:3020/:5020]
-        DOM[domain\n:3030/:5030]
-        CTX[context\n:3040/:5040]
-        ESS[essential\n:3050/:5050]
-        ID[identity\n:3080/:5080]
+        AUTH["auth<br/>:3020/:5020"]
+        DOM["domain<br/>:3030/:5030"]
+        CTX["context<br/>:3040/:5040"]
+        ESS["essential<br/>:3050/:5050"]
+        ID["identity<br/>:3080/:5080"]
     end
 
     subgraph Business Services
-        FIN[financial\n:3060/:5060]
-        CAR[career\n:3140/:5140]
-        SPE[special\n:3090/:5090]
-        TCH[touch\n:3100/:5100]
-        CNT[content\n:3110/:5110]
-        LOG[logistic\n:3120/:5120]
-        CON[conjoint\n:3130/:5130]
-        GEN[general\n:3070/:5070]
-        THG[thing\n:3150/:5150]
+        FIN["financial<br/>:3060/:5060"]
+        CAR["career<br/>:3140/:5140"]
+        SPE["special<br/>:3090/:5090"]
+        TCH["touch<br/>:3100/:5100"]
+        CNT["content<br/>:3110/:5110"]
+        LOG["logistic<br/>:3120/:5120"]
+        CON["conjoint<br/>:3130/:5130"]
+        GEN["general<br/>:3070/:5070"]
+        THG["thing<br/>:3150/:5150"]
     end
 
     subgraph Workers
-        DISP[dispatcher\n:4010]
-        OBS[observer\n:4020]
-        PRES[preserver\n:4030]
-        WATCH[watcher\n:4040]
-        PUB[publisher\n:4050]
-        LOGG[logger\n:4060]
-        CLN[cleaner\n:4070]
+        DISP["dispatcher<br/>:4010"]
+        OBS["observer<br/>:4020"]
+        PRES["preserver<br/>:4030"]
+        WATCH["watcher<br/>:4040"]
+        PUB["publisher<br/>:4050"]
+        LOGG["logger<br/>:4060"]
+        CLN["cleaner<br/>:4070"]
     end
 
     GW[Gateway :3010] --> Core Services
