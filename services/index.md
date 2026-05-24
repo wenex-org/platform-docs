@@ -2,8 +2,6 @@
 
 Wenex Platform consists of 15 domain microservices plus 7 worker processes. All services are NestJS applications that expose a REST API and a gRPC server. Workers are event-driven consumers that do not expose a public REST API.
 
----
-
 ## Architecture Summary
 
 ```mermaid
@@ -45,8 +43,6 @@ graph LR
     Kafka --> Workers
 ```
 
----
-
 ## Standard Service Internals
 
 Every microservice follows the same internal structure:
@@ -70,8 +66,6 @@ apps/services/<name>/src/
 └── protobuf/                  # Generated gRPC TypeScript stubs
 ```
 
----
-
 ## Core Services
 
 ### auth — Authentication & Authorization
@@ -87,11 +81,10 @@ Handles all authentication flows and token management. Unique in that it does no
 | Grants | `/auth/grants` | OAuth permission grants |
 
 **Key behaviors:**
+
 - `POST /auth/token` is public (`@IsPublic()`) — no auth header required
 - APTs are revocable and scoped — create them with minimal permissions
 - `POST /auth/can` performs ABAC policy evaluation via the `abacl` library
-
----
 
 ### domain — Tenant & OAuth Management
 
@@ -103,8 +96,6 @@ Manages tenant domains, OAuth applications, and client registrations.
 |---|---|---|
 | Apps | `/domain/apps` | OAuth application definitions |
 | Clients | `/domain/clients` | OAuth client credentials |
-
----
 
 ### context — Configuration & Settings
 
@@ -131,8 +122,6 @@ await platform.context.configs.create({
 
 The Platform's `publisher` worker reads these entries after every write to deliver webhook payloads to each client listed in a document's `clients[]` array.
 
----
-
 ### essential — Saga Orchestration
 
 **Port:** REST `:3050` · gRPC `:5050`
@@ -145,11 +134,10 @@ Manages distributed saga transactions across multiple services. Workers use Post
 | Saga Stages | `/essential/saga-stages` | Individual compensating steps |
 
 **Key behaviors:**
+
 - Sagas coordinate multi-service operations (e.g., order creation touching financial + logistic + conjoint)
 - PostgreSQL stores saga stage state for crash recovery
 - Workers (`dispatcher`, `observer`, `preserver`) drive saga execution
-
----
 
 ### identity — Users, Profiles & Sessions
 
@@ -164,10 +152,9 @@ Core user management service. All other services reference users by MongoId.
 | Sessions | `/identity/sessions` | Active login sessions |
 
 **Key behaviors:**
+
 - User creation triggers Kafka events consumed by other services (e.g., wallet auto-creation in `financial`)
 - Sessions are soft-deleted on logout, hard-deleted by the `cleaner` worker
-
----
 
 ## Business Services
 
@@ -184,8 +171,6 @@ Manages the full financial lifecycle: accounts → wallets → invoices → tran
 | Invoices | `/financial/invoices` | Billing documents |
 | Transactions | `/financial/transactions` | Payment / transfer records |
 | Currencies | `/financial/currencies` | Supported currency definitions |
-
----
 
 ### career — Business Operations
 
@@ -204,8 +189,6 @@ The largest domain service, managing all business-side entities.
 | Stores | `/career/stores` | Retail/online store fronts |
 | Customers | `/career/customers` | Customer records |
 
----
-
 ### special — Files & Statistics
 
 **Port:** REST `:3090` · gRPC `:5090`
@@ -218,10 +201,9 @@ Handles file uploads (via MinIO) and computed statistics.
 | Stats | `/special/stats` | Aggregated metrics / counters |
 
 **Key behaviors:**
+
 - File content is stored in MinIO; only metadata (filename, size, mime, url) is in MongoDB
 - The `publisher` worker processes file events for CDN propagation
-
----
 
 ### touch — Notifications & Messaging
 
@@ -238,10 +220,9 @@ Records and dispatches all outbound communications.
 | Histories | `/touch/histories` | Delivery status history |
 
 **Key behaviors:**
+
 - Records are created first; actual delivery is handled by the `publisher` worker via EMQX/MQTT
 - `histories` tracks per-recipient delivery status
-
----
 
 ### content — Notes, Posts & Support
 
@@ -254,8 +235,6 @@ Rich content management for user-facing documents.
 | Notes | `/content/notes` | Rich-text notes / documents |
 | Posts | `/content/posts` | Published articles / blog posts |
 | Tickets | `/content/tickets` | Support ticket threads |
-
----
 
 ### logistic — Tracking & Delivery
 
@@ -270,8 +249,6 @@ Tracks physical assets and movements.
 | Vehicles | `/logistic/vehicles` | Vehicle registry |
 | Travels | `/logistic/travels` | Trip / route records |
 | Cargoes | `/logistic/cargoes` | Shipment manifests |
-
----
 
 ### conjoint — Messaging & Channels
 
@@ -288,10 +265,9 @@ Real-time messaging infrastructure.
 | Messages | `/conjoint/messages` | Individual messages |
 
 **Key behaviors:**
+
 - Message delivery uses EMQX/MQTT via the `publisher` worker
 - Channels support multiple account types (user, bot, business)
-
----
 
 ### general — Cross-Cutting Entities
 
@@ -307,8 +283,6 @@ Shared entities used across domains.
 | Events | `/general/events` | Calendar / system events |
 | Workflows | `/general/workflows` | Process definitions |
 
----
-
 ### thing — IoT & Telemetry
 
 **Port:** REST `:3150` · gRPC `:5150`
@@ -320,8 +294,6 @@ Internet of Things device management and sensor telemetry.
 | Devices | `/thing/devices` | IoT device registry |
 | Sensors | `/thing/sensors` | Sensor definitions per device |
 | Metrics | `/thing/metrics` | Sensor readings / time-series |
-
----
 
 ## Worker Processes
 
@@ -350,8 +322,6 @@ apps/workers/<name>/src/
 └── entities/            # TypeORM entities (PostgreSQL)
 ```
 
----
-
 ## Scope Naming Convention
 
 Required scopes follow the pattern `{action}:{service}:{collection}`:
@@ -363,8 +333,6 @@ manage:auth:apts          → ManageAuthApts
 ```
 
 The `manage:` prefix grants all read, write, and destructive actions including `destroy` and bulk operations.
-
----
 
 ## Health Checks
 
