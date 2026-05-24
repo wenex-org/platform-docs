@@ -10,7 +10,7 @@ Wenex Platform is a large-scale distributed microservices system built with Nest
 
 | Document | Description |
 | --- | --- |
-| [Getting Started](./getting-started.md) | Clone, install, seed, and run the platform |
+| [Getting Started](./getting-started/index.md) | Clone, install, seed, and run the platform |
 | [**Ecosystem & ABAC Model**](./ecosystem.md) | **How Clients, Coworkers, and the Platform relate — read this first** |
 | [Architecture](./architecture.md) | System design, request flow, data layer, Mermaid diagrams |
 | **API Reference** | |
