@@ -22,7 +22,7 @@ Wenex Platform is a large-scale distributed microservices system built with Nest
 | **SDK** | |
 | [SDK Guide](./sdk/) | `@wenex/sdk` installation, configuration, and examples |
 | **Services** | |
-| [Service Catalog](./services/) | All 15 microservices — purpose, ports, collections |
+| [Service Catalog](./getting-started/services/) | All 15 microservices — purpose, ports, collections |
 | **MCP** | |
 | [MCP Integration](./mcp/overview.md) | MCP tools, AI agent usage, `mcp-client.ts` |
 | **Client Development** | |
