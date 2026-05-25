@@ -40,7 +40,7 @@ graph TB
     GW --> LIB
 ```
 
-A **Coworkers space** is not a Platform entity — it is the organizational concept that groups clients who collaborate. See [Coworkers Space](../key-concepts/coworkers) for the full model.
+A **Coworkers space** is not a Platform entity — it is the organizational concept that groups clients who collaborate. See [Coworkers Space](../key-concepts/coworkers-space) for the full model.
 
 ## Design Principles
 

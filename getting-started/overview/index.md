@@ -13,5 +13,5 @@ Before diving into setup, it helps to understand how the Wenex world is structur
 
 ## In this section
 
-- [Ecosystem](./ecosystem) — How independent client applications coexist on a single Platform instance, how the Coworkers model groups them, and how data is shared between them without direct coupling.
+- [Ecosystem](./ecosystem/) — How independent client applications coexist on a single Platform instance, how the Coworkers model groups them, and how data is shared between them without direct coupling.
 - [Key Concepts](./key-concepts/) — The foundational model that applies to every document and every request across the Platform.

@@ -100,4 +100,4 @@ The `PolicyGuard` maps these to three action levels:
 
 The Platform enforces **data shape and ABAC only** — no domain-specific business rules. Rules like "a user can only have one active wallet" or "invoices can only be paid once" belong in the Client application.
 
-See [Core Schema](./core-schema) for the document fields that ABAC operates on, and [Coworkers Space](./coworkers) for how the `clients[]` field enables cross-application data sharing.
+See [Core Schema](./core-schema) for the document fields that ABAC operates on, and [Coworkers Space](./coworkers-space) for how the `clients[]` field enables cross-application data sharing.
