@@ -122,4 +122,4 @@ The **Wenex Client** is the official first-party application built by the Wenex 
 | Reading shared data | `?zone=client` — matches token's `cid` against document `clients[]` |
 | Delivery mechanism | Platform `publisher` worker → CQRS webhook POST |
 
-See [ABAC](./abac) for how `clients[]` is evaluated during reads, and [Core Schema](./core-schema) for the full set of document ownership fields.
+See [ABAC](./access-control) for how `clients[]` is evaluated during reads, and [Core Schema](./core-schema) for the full set of document ownership fields.
