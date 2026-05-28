@@ -115,9 +115,9 @@ Client applications that mirror the Platform pattern use a simpler pipeline:
 
 ```mermaid
 graph LR
-    subgraph apps/
+    subgraph apps["apps/"]
         GW[gateway]
-        subgraph services/
+        subgraph services["services/"]
             S1[auth]
             S2[identity]
             S3[financial]
@@ -133,7 +133,7 @@ graph LR
             S13[general]
             S14[thing]
         end
-        subgraph workers/
+        subgraph workers["workers/"]
             W1[dispatcher]
             W2[observer]
             W3[preserver]
@@ -144,7 +144,7 @@ graph LR
         end
     end
 
-    subgraph libs/
+    subgraph libs["libs/"]
         LC[common]
         LM[module]
         LCmd[command]
@@ -165,7 +165,7 @@ The gateway is the sole entry point for external traffic. It hosts three protoco
 
 ```mermaid
 graph TB
-    subgraph Gateway :3010
+    subgraph gw["Gateway :3010"]
         REST["REST<br/>/api  /auth  /identity  …"]
         GQL["GraphQL<br/>/graphql"]
         MCP["MCP Tools<br/>/mcp"]
@@ -197,7 +197,7 @@ Every domain service follows an identical internal structure:
 
 ```mermaid
 graph LR
-    subgraph Service e.g. identity :3080/:5080
+    subgraph svc["Service — e.g. identity :3080/:5080"]
         MAIN[main.ts<br/>REST + gRPC bootstrap]
         MOD[app.module.ts<br/>DB config + imports]
         subgraph Feature Module users
@@ -221,7 +221,7 @@ Workers are event-driven: they consume Kafka topics and dispatch BullMQ jobs.
 
 ```mermaid
 graph LR
-    subgraph Worker e.g. dispatcher :4010
+    subgraph wrk["Worker — e.g. dispatcher :4010"]
         KAFKA[Kafka Consumer<br/>event topics]
         PROC[app.processor.ts<br/>BullMQ @Process]
         TASK[app.task.ts<br/>@Cron scheduled]
