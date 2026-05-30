@@ -5,6 +5,7 @@ The gateway exposes a uniform REST interface for all 15 domain services. Every c
 **Base URL:** `http://localhost:3010`
 
 All examples assume:
+
 ```bash
 export TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 export BASE="http://localhost:3010"

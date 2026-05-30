@@ -91,11 +91,30 @@ sequenceDiagram
 - Coworker sharing is automatic — no explicit `clients[]` payload required when the `coworker` JWT claim is set.
 - Both clients end up with an identical local copy of the document (same field names and structure as the Platform schema).
 
+## Webhook Payload
+
+When the Platform's `publisher` worker delivers a CQRS event to your client's webhook endpoint, the payload contains the event type and the full document in its post-operation state:
+
+```json
+{
+  "event": "create",
+  "data": {
+    "id": "doc1",
+    "title": "Shared spec",
+    "owner": "user_id",
+    "clients": ["clientA_id", "clientB_id"],
+    "created_at": "2026-05-15T10:00:00.000Z"
+  }
+}
+```
+
+Event types mirror the CRUD lifecycle: `create`, `update`, `delete` (soft), `restore`, `destroy` (hard).
+
 ## Reading Coworker Data
 
 To query documents that a coworker has shared with your client, use the `client` zone:
 
-```
+```http
 GET /content/notes?zone=client
 ```
 
@@ -103,8 +122,39 @@ This returns all documents where `token.cid` is listed in `clients[]` — which 
 
 Combine zones to broaden the query:
 
-```
+```http
 GET /content/notes?zone=own,client
+```
+
+## Full Data Lifecycle
+
+The following sequence shows the complete path from a user action in Client A through the Platform and into Client B's local database:
+
+```mermaid
+sequenceDiagram
+    participant UA as User (Client A)
+    participant CA as Client A Backend
+    participant GW as Platform Gateway
+    participant DB as Platform MongoDB
+    participant PUB as Publisher Worker
+    participant CB as Client B Worker
+    participant CBD as Client B MongoDB
+
+    UA->>CA: Create entity (business validated)
+    CA->>GW: POST /{service}/{collection}\n{ ...data, clients: ["clientB_id"] }
+    GW->>DB: insert document\n{ owner: user_id, clients: ["clientA_id","clientB_id"] }
+    DB-->>GW: saved document
+    GW-->>CA: 201 { data: { id: "...", ... } }
+    GW-)PUB: Kafka: entity.created
+
+    PUB->>PUB: lookup CQRS config\nfor clientA_id and clientB_id
+    PUB->>CA: POST /cqrs { event:"create", data:{...} }
+    PUB->>CB: POST /cqrs { event:"create", data:{...} }
+
+    CA->>CA: store in Client A DB
+    CB->>CBD: store in Client B DB
+
+    note over CBD: Client B now has a local\ncopy with the Platform schema.\nCustom indexes built on ingestion.
 ```
 
 ## Wenex Client

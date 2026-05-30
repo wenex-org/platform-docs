@@ -17,7 +17,7 @@ features:
   - icon: 🗄️
     title: Object Storage and NoSQL
     details: MongoDB as the primary entity store, MinIO for object storage, and Redis for caching and sessions — all integrated and production-ready out of the box.
-    link: /architecture
+    link: /getting-started/overview/ecosystem/platform
 
   - icon: 🔗
     title: RESTful, GraphQL, and gRPC
@@ -27,7 +27,7 @@ features:
   - icon: 📊
     title: Observability and Monitoring
     details: Prometheus metrics, OpenTelemetry distributed traces, Elasticsearch log aggregation, and health check endpoints on every service and worker.
-    link: /architecture
+    link: /getting-started/overview/ecosystem/platform
 
   - icon: 🤖
     title: AI Agent Integration via MCP
@@ -37,6 +37,7 @@ features:
   - icon: 🚀
     title: GitLab CI/CD and K8s Integration
     details: Production-ready CI/CD pipelines and Kubernetes deployment manifests for automated, scalable delivery of all gateway, service, and worker components.
+    link: /getting-started/setup/kubernetes-setup
 
   - icon: 🧠
     title: MLOps

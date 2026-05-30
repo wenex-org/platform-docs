@@ -1,5 +1,9 @@
 # Auth
 
+See also → [Authentication](/api/authentication) for token endpoints, APTs, and the `strict` flag · [Authorization](/api/authorization) for ABAC, grants, scopes, and the `AuthorityInterceptor`
+
+---
+
 **Port:** REST `:3020` · gRPC `:5020`
 
 Handles all authentication flows, token management, personal API keys, and OAuth permission grants. Unlike every other service, `auth` does not follow the standard 14-operation CRUD pattern for its primary endpoint.
@@ -50,7 +54,7 @@ Long-lived API keys scoped to a set of OAuth scopes. Use for service-to-service 
 
 OAuth permission grants define what actions a subject (user or role) may perform on a resource within a domain.
 
-### Required Create Fields
+### Required Grant Fields
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
@@ -59,7 +63,7 @@ OAuth permission grants define what actions a subject (user or role) may perform
 | `resource` | ✅ | string | Resource identifier (e.g. `identity:users`) |
 | `domain` | ✅ | string | FQDN of the tenant domain |
 
-### Key Behaviors
+### Grant Behaviors
 
 - Grants are evaluated by `PolicyGuard` on every authenticated request.
 - Subject format: `{username}@{domain}` — the domain suffix is required in grants but **not** stored in `identity/users.subjects`.
