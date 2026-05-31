@@ -81,8 +81,6 @@ graph TB
     MCP --> Guards
 ```
 
----
-
 Once the gateway is running, it logs the following startup summary:
 
 ```text

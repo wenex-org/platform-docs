@@ -11,8 +11,6 @@ export TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
 export BASE="http://localhost:3010"
 ```
 
----
-
 ## Standard Endpoint Pattern
 
 Every collection at `/{service}/{collection}` provides these endpoints:
@@ -32,8 +30,6 @@ Every collection at `/{service}/{collection}` provides these endpoints:
 | `DELETE` | `/{service}/{collection}/:id/destroy` | `manage:` | Hard-delete (permanent) |
 
 > **Scope notation:** `read:` = `read:{service}:{collection}`, e.g. `read:identity:users`
-
----
 
 ## Detailed Endpoint Descriptions
 
@@ -58,8 +54,6 @@ curl "$BASE/identity/users/count" \
 ```json
 { "total": 42 }
 ```
-
----
 
 ### POST / — Create One Document
 
@@ -92,8 +86,6 @@ curl -X POST "$BASE/identity/users" \
 
 > **Note:** Computed fields (`id`, `created_at`, `updated_at`, `created_by`, etc.) are platform-managed and must not be sent in the request body.
 
----
-
 ### POST /bulk — Create Many Documents
 
 ```bash
@@ -119,8 +111,6 @@ curl -X POST "$BASE/identity/users/bulk" \
   "count": 2
 }
 ```
-
----
 
 ### GET / — Find with Filters
 
@@ -162,8 +152,6 @@ curl "$BASE/identity/users?query={}&zone=own" \
 }
 ```
 
----
-
 ### GET /cursor — Stream via SSE
 
 Returns a chunked Server-Sent Events stream. See [Streaming](./streaming.md).
@@ -173,8 +161,6 @@ curl -N "$BASE/identity/users/cursor?query={}" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: text/event-stream"
 ```
-
----
 
 ### GET /:id — Find One by ID
 
@@ -203,8 +189,6 @@ curl "$BASE/identity/users/my-ref-slug?ref=true" \
 }
 ```
 
----
-
 ### PATCH /:id — Update One by ID
 
 Only include fields you want to change. Omitted fields are left unchanged.
@@ -217,8 +201,6 @@ curl -X PATCH "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1" \
 ```
 
 **Response:** same shape as `GET /:id` with updated fields.
-
----
 
 ### PATCH /bulk — Update Many Documents
 
@@ -242,8 +224,6 @@ curl -X PATCH "$BASE/identity/users/bulk" \
 { "total": 5 }
 ```
 
----
-
 ### DELETE /:id — Soft Delete
 
 Sets `deleted_at` on the document. The document is hidden from normal queries but not permanently removed. Requires `write:` scope.
@@ -255,8 +235,6 @@ curl -X DELETE "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1" \
 
 **Response:** the soft-deleted document with `deleted_at` populated.
 
----
-
 ### PUT /:id/restore — Restore a Soft-Deleted Document
 
 Clears `deleted_at`, making the document visible again. Requires `write:` scope.
@@ -266,8 +244,6 @@ curl -X PUT "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1/restore" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
----
-
 ### DELETE /:id/destroy — Hard Delete (Permanent)
 
 Permanently removes the document from MongoDB. **Irreversible.** Requires `manage:` scope.
@@ -276,8 +252,6 @@ Permanently removes the document from MongoDB. **Irreversible.** Requires `manag
 curl -X DELETE "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1/destroy" \
   -H "Authorization: Bearer $TOKEN"
 ```
-
----
 
 ## All Collections
 
@@ -406,8 +380,6 @@ curl -X DELETE "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1/destroy" \
 | Sensors | `/thing/sensors` | Sensor definitions |
 | Metrics | `/thing/metrics` | Sensor metric readings |
 
----
-
 ## Response Envelope
 
 All responses are wrapped in a consistent envelope:
@@ -441,8 +413,6 @@ All responses are wrapped in a consistent envelope:
 { "result": true }
 ```
 
----
-
 ## Common Fields on Every Document
 
 These fields are platform-managed and present on every entity returned by the API:
@@ -461,8 +431,6 @@ These fields are platform-managed and present on every entity returned by the AP
 | `version` | number | Optimistic concurrency version |
 | `tags` | string[] | Free-form tags |
 | `props` | object | Free-form extra properties |
-
----
 
 ## Swagger UI
 

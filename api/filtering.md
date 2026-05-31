@@ -2,8 +2,6 @@
 
 All `find` and `count` endpoints accept a structured filter system. This document describes every component of that system and shows how to use it via REST query parameters, REST body, and GraphQL variables.
 
----
-
 ## Filter Object Structure
 
 The full `FilterDto` has four optional fields:
@@ -20,8 +18,6 @@ interface FilterDto<T> {
 For single-document lookups (`findOne`, `findById`) the `FilterOneDto` is used — it has the same fields minus `pagination`.
 
 For `count` and `updateBulk` a `QueryFilterDto` is used — it has `query` only.
-
----
 
 ## query — MongoDB Query Expression
 
@@ -83,8 +79,6 @@ curl "$BASE/identity/users" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
----
-
 ## pagination — Limit, Skip, Sort
 
 Controls result set size and ordering.
@@ -118,8 +112,6 @@ interface PaginationDto<T> {
 { "pagination": { "sort": { "priority": -1, "created_at": 1 } } }
 ```
 
----
-
 ## projection — Field Inclusion / Exclusion
 
 Standard MongoDB projection. Use `1` to include fields, `0` to exclude.
@@ -133,8 +125,6 @@ Standard MongoDB projection. Use `1` to include fields, `0` to exclude.
 ```
 
 > You cannot mix inclusions and exclusions in the same projection (MongoDB restriction), except for `_id`.
-
----
 
 ## populate — Populate Related Documents
 
@@ -208,8 +198,6 @@ query {
 }
 ```
 
----
-
 ## zone — Ownership Filtering
 
 The `zone` parameter is a query parameter (not part of the filter body) that applies automatic ownership scoping via `AuthorityInterceptor`.
@@ -236,8 +224,6 @@ curl "$BASE/identity/users?query={}&zone=own,share" \
 curl "$BASE/identity/users?query={}&zone=own,share,group,client" \
   -H "Authorization: Bearer $TOKEN"
 ```
-
----
 
 ## Complete Filter Example
 
@@ -287,8 +273,6 @@ Variables:
 }
 ```
 
----
-
 ## Filter for Count and Update Bulk
 
 `count` and `updateBulk` accept only `QueryFilterDto`, which contains just `query`:
@@ -311,8 +295,6 @@ curl -X PATCH "$BASE/financial/transactions/bulk" \
   -H "Content-Type: application/json" \
   -d '{ "status": "failed" }'
 ```
-
----
 
 ## ETag Caching
 

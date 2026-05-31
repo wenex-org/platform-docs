@@ -1,9 +1,3 @@
----
-next:
-  text: 'Overview'
-  link: '/getting-started/overview'
----
-
 # Getting Started
 
 Everything you need to go from zero to a running Wenex Platform instance — understand the architecture, spin up infrastructure, and start building.

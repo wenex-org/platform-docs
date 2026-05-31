@@ -4,8 +4,6 @@ The gateway exposes a full GraphQL API at `http://localhost:3010/graphql` powere
 
 **Playground:** `http://localhost:3010/graphql`
 
----
-
 ## Naming Convention
 
 GraphQL operation names follow a predictable pattern:
@@ -42,8 +40,6 @@ GraphQL operation names follow a predictable pattern:
 | Restore | `restoreIdentityUserById` |
 | Hard delete | `destroyIdentityUserById` |
 
----
-
 ## Authentication
 
 Pass the JWT in the `Authorization` HTTP header exactly as with REST:
@@ -53,8 +49,6 @@ Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 In the Apollo Playground, use the **Headers** tab at the bottom.
-
----
 
 ## Query Examples — Identity Users
 
@@ -73,8 +67,6 @@ Variables:
 ```json
 { "filter": { "query": {} } }
 ```
-
----
 
 ### Find List
 
@@ -108,8 +100,6 @@ Variables with pagination:
 }
 ```
 
----
-
 ### Find by ID
 
 ```graphql
@@ -132,8 +122,6 @@ Variables:
 ```json
 { "id": "64a1b2c3d4e5f6a7b8c9d0e1" }
 ```
-
----
 
 ### Create One
 
@@ -163,8 +151,6 @@ Variables:
 }
 ```
 
----
-
 ### Create Bulk
 
 ```graphql
@@ -192,8 +178,6 @@ Variables:
 }
 ```
 
----
-
 ### Update by ID
 
 ```graphql
@@ -218,8 +202,6 @@ Variables:
 }
 ```
 
----
-
 ### Update Bulk
 
 ```graphql
@@ -239,8 +221,6 @@ Variables:
 }
 ```
 
----
-
 ### Soft Delete
 
 ```graphql
@@ -253,8 +233,6 @@ mutation DeleteUser($id: String!, $ref: String) {
   }
 }
 ```
-
----
 
 ### Restore
 
@@ -269,8 +247,6 @@ mutation RestoreUser($id: String!, $ref: String) {
 }
 ```
 
----
-
 ### Hard Delete (Destroy)
 
 ```graphql
@@ -284,8 +260,6 @@ mutation DestroyUser($id: String!, $ref: String) {
 ```
 
 > Requires `manage:identity:users` scope.
-
----
 
 ## Using `curl` with GraphQL
 
@@ -309,8 +283,6 @@ curl -X POST http://localhost:3010/graphql \
     "variables": { "id": "64a1b2c3d4e5f6a7b8c9d0e1" }
   }'
 ```
-
----
 
 ## Operation Name Reference
 
@@ -433,8 +405,6 @@ curl -X POST http://localhost:3010/graphql \
 | Sensors | `ThingSensor` | `findThingSensor` |
 | Metrics | `ThingMetric` | `createThingMetric` |
 
----
-
 ## Filter Input Types
 
 GraphQL reuses the same filter system as REST. The input types map to:
@@ -446,8 +416,6 @@ GraphQL reuses the same filter system as REST. The input types map to:
 | `FilterOneDto` | `query`, `populate`, `projection` | For single-entity operations |
 
 See [Filtering & Pagination](./filtering.md) for the complete field reference.
-
----
 
 ## Response Types
 

@@ -1,9 +1,3 @@
----
-next:
-  text: 'Authentication'
-  link: '/api/authentication'
----
-
 # API Reference
 
 Complete reference for the Wenex Platform HTTP API — authentication, authorization, REST and GraphQL endpoints, filtering, and real-time streaming.

@@ -1,12 +1,3 @@
----
-prev:
-  text: 'Overview'
-  link: '/getting-started/overview'
-next:
-  text: 'Platform'
-  link: '/getting-started/overview/ecosystem/platform'
----
-
 # Ecosystem
 
 The Wenex ecosystem is the organizational model that lets multiple independent applications share a single Platform instance without direct coupling.

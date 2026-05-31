@@ -4,8 +4,6 @@ Every authenticated request passes through three guards and one interceptor befo
 
 See also → [Authentication](/api/authentication) for token types, the `POST /auth/token` endpoint, and the `strict` / `x-api-key` mechanism.
 
----
-
 ## Request authorization pipeline
 
 ```mermaid
@@ -31,8 +29,6 @@ sequenceDiagram
     H-->>C: Response
 ```
 
----
-
 ## Layer 1 — AuthGuard (token validation)
 
 `AuthGuard` runs first on every non-public endpoint. It:
@@ -45,8 +41,6 @@ sequenceDiagram
 6. Attaches the decoded token to `req.token` for downstream layers.
 
 A route decorated with `@IsPublic()` skips all of the above.
-
----
 
 ## Layer 2 — ScopeGuard (first-scope check)
 
@@ -76,8 +70,6 @@ Examples: `read:identity:users`, `write:financial:accounts`, `manage:auth:grants
 Scopes are matched by prefix. A token with `read:identity` satisfies `read:identity:users` and `read:identity:profiles` without listing each individually.
 
 If `ScopeGuard` fails, the request is rejected with `403 Forbidden` before any ABAC check runs. This is intentional — scope is a cheap pre-filter that avoids a Redis/gRPC round-trip to the auth service.
-
----
 
 ## Layer 3 — PolicyGuard (ABAC check)
 
@@ -145,8 +137,6 @@ curl -X POST http://localhost:3010/auth/can \
   }
 }
 ```
-
----
 
 ## Grants — the ABAC data model
 
@@ -243,8 +233,6 @@ curl -X POST http://localhost:3010/auth/can \
   }'
 ```
 
----
-
 ## Field restrictions — field-level access control
 
 When a grant specifies `field`, the token can **only** access those fields on read, and can **only modify** those fields on write.
@@ -265,8 +253,6 @@ When a grant specifies `field`, the token can **only** access those fields on re
 | `{ "published_at": "2026-06-01" }` | ❌ `published_at` not in field list |
 
 If no `field` is specified in any applicable grant, **all fields are accessible**.
-
----
 
 ## Filter restrictions — record-level access control
 
@@ -306,8 +292,6 @@ Filters use **MongoDB query language** with token variable substitution:
 { "department": "token.department" }                    // token attribute
 ```
 
----
-
 ## Location-based access — IP restrictions
 
 When a grant specifies `location`, requests from outside those IP addresses are rejected with `403 Forbidden`.
@@ -323,8 +307,6 @@ When a grant specifies `location`, requests from outside those IP addresses are 
 
 If `location` is empty or omitted, all IPs are allowed.
 
----
-
 ## Time-based access — temporal restrictions
 
 When a grant specifies `time`, access is only allowed during the specified windows. `cron_exp` defines when the window opens; `duration` is how many seconds it stays open. Multiple time entries are combined with **OR**.
@@ -338,8 +320,6 @@ When a grant specifies `time`, access is only allowed during the specified windo
   // business hours Mon–Fri, 9am for 9 hours
 }
 ```
-
----
 
 ## Layer 4 — AuthorityInterceptor (query-time enforcement)
 
@@ -410,8 +390,6 @@ For Mongoose `populate` paths, the interceptor uses `perms` to verify the user h
 
 After all security checks pass, `refineQuery()` injects the `id` path parameter and/or `ref` query parameter into the Mongo filter as the final step before execution.
 
----
-
 ## ABAC ownership model
 
 Every document carries four ownership fields:
@@ -431,8 +409,6 @@ Zone conditions:
 | `share` | `token.uid in shares[]` |
 | `group` | `token.aid or token.domain in groups[]` |
 | `client` | `token.cid in clients[]` |
-
----
 
 ## Authorization patterns
 
@@ -506,8 +482,6 @@ const canDelete = await fetch('/auth/can', {
 if (canDelete) showDeleteButton();
 ```
 
----
-
 ### Pattern 2: Ownership-based access
 
 Users can only access or modify their own records.
@@ -553,8 +527,6 @@ await fetch('/identity/users/user-456', {
 });  // ❌ 403 Forbidden — not the owner
 ```
 
----
-
 ### Pattern 3: Team / group-based access
 
 Teams get access to shared resources via the `groups` field on records.
@@ -596,8 +568,6 @@ curl -X POST http://localhost:3010/content/documentation \
 // AuthorityInterceptor checks these against record's groups[] field
 ```
 
----
-
 ### Pattern 4: Client isolation (multi-tenancy)
 
 Different OAuth clients can only access their own data.
@@ -627,8 +597,6 @@ curl -X POST http://localhost:3010/auth/grants \
 ```
 
 Records created by the web app automatically include `"clients": ["web-app-id"]`. Mobile app requests only see notes with `mobile-app-id` in their `clients[]` array.
-
----
 
 ### Pattern 5: Time-based access
 
@@ -687,8 +655,6 @@ curl -X POST http://localhost:3010/auth/grants \
 
 Access is automatically denied outside the windows — no manual revocation needed.
 
----
-
 ### Pattern 6: Location-based access (IP restrictions)
 
 Restrict access to specific networks — office, VPN, data center.
@@ -739,8 +705,6 @@ const apiToken = {
 };
 ```
 
----
-
 ### Pattern 7: Field-level access control
 
 Different users can see or modify different fields on the same record.
@@ -785,8 +749,6 @@ await fetch('/identity/users/user-123', {
 });  // ❌ 403 Forbidden
 ```
 
----
-
 ### Pattern 8: Shared / collaborative access
 
 Users explicitly share records with other users via the `shares` field.
@@ -825,8 +787,6 @@ const notes = await fetch('/content/notes?zone=own,share', {
 }).then(r => r.json());
 ```
 
----
-
 ### Pattern 9: Custom actions
 
 Applications can define permissions beyond the standard `read` / `write` / `manage`.
@@ -863,8 +823,6 @@ const canPublish = await fetch('/auth/can', {
 
 Document custom actions clearly so the team understands what each one means.
 
----
-
 ### Pattern 10: Complex multi-condition access
 
 Combine subject, filter, field, location, and time constraints in a single grant.
@@ -891,8 +849,6 @@ curl -X POST http://localhost:3010/auth/grants \
 
 This grant allows only managers to update `status` and `notes` on pending invoices in their department, from office or VPN, during 2026.
 
----
-
 ## Full example: read a user record
 
 ```mermaid
@@ -914,8 +870,6 @@ sequenceDiagram
     IS-->>GW: User document
     GW-->>FE: 200 { data: { id, username, email } }
 ```
-
----
 
 ## Debugging authorization issues
 
@@ -963,8 +917,6 @@ If `field` is set, only those fields are accessible — the grant itself tells y
 
 Set environment variable `DEBUG=wnx:auth:*` to see authorization decision logs.
 
----
-
 ## Error reference
 
 | Status | Guard / Interceptor | Cause |
@@ -975,8 +927,6 @@ Set environment variable `DEBUG=wnx:auth:*` to see authorization decision logs.
 | `403 Forbidden` | `PolicyGuard` | No matching grant for this action + resource |
 | `403 Forbidden` | `AuthorityInterceptor` | Query references disallowed fields |
 | `502 Bad Gateway` | `AuthorityInterceptor` | `AuthGuard` or `PolicyGuard` was not applied (internal misconfiguration) |
-
----
 
 ## Best practices
 
@@ -990,8 +940,6 @@ Set environment variable `DEBUG=wnx:auth:*` to see authorization decision logs.
 8. **Audit access logs** — monitor who accesses what
 9. **Review grants regularly** — remove stale permissions
 10. **Document custom actions** — help the team understand your permission model
-
----
 
 ## See Also
 

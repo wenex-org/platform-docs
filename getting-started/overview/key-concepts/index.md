@@ -1,12 +1,3 @@
----
-prev:
-  text: 'Client App'
-  link: '/getting-started/overview/ecosystem/client-app'
-next:
-  text: 'Core Schema'
-  link: '/getting-started/overview/key-concepts/core-schema'
----
-
 # Key Concepts
 
 These three concepts appear throughout the Platform and are worth understanding before reading any other section. They are not service-specific — they apply to every document, every read request, and every client application built on top of the Platform.

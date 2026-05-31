@@ -4,8 +4,6 @@
 
 Wenex Platform is a large-scale distributed microservices system built with NestJS. It exposes a unified REST, GraphQL, and MCP (Model Context Protocol) gateway in front of 15 domain microservices backed by MongoDB, PostgreSQL, Redis, Kafka, Elasticsearch, and MQTT.
 
----
-
 ## Table of Contents
 
 | Document | Description |
@@ -27,8 +25,6 @@ Wenex Platform is a large-scale distributed microservices system built with Nest
 | [MCP Integration](./mcp/overview.md) | MCP tools, AI agent usage, `mcp-client.ts` |
 | **Client Development** | |
 | [Client Development Guide](./getting-started/overview/ecosystem/client-app) | Building a client app — canonical structure, patterns, best practices |
-
----
 
 ## Quick Reference
 
@@ -65,8 +61,6 @@ GET  /auth/apts/count
 | --- | --- | --- |
 | `Authorization` | `Bearer <jwt>` | Required for all protected routes |
 | `x-request-id` | string | Trace ID (auto-generated if omitted) |
-
----
 
 ## C4 Diagrams
 
