@@ -6,8 +6,6 @@ The `@wenex/sdk` package is the official TypeScript/JavaScript client for the We
 **Version:** 1.3.4
 **Repository:** [wenex-org/platform-sdk](https://github.com/wenex-org/platform-sdk)
 
----
-
 ## Installation
 
 ```bash
@@ -21,8 +19,6 @@ Optional: Brotli compression support (reduces network payload):
 ```bash
 npm install @wenex/sdk axios brotli-wasm
 ```
-
----
 
 ## Quick Start
 
@@ -45,8 +41,6 @@ const platform = Platform.build(http);
 const users = await platform.identity.users.find({ query: {} });
 console.log(users); // User[]
 ```
-
----
 
 ## Platform Class
 
@@ -76,8 +70,6 @@ class Platform {
 ```
 
 The optional `prefix` parameter is prepended to all request paths (useful when the API is served under a sub-path).
-
----
 
 ## Authentication
 
@@ -121,8 +113,6 @@ const authedPlatform = Platform.build(
 );
 ```
 
----
-
 ## RestfulService Methods
 
 Every collection (users, accounts, products, etc.) extends `RestfulService`, which provides these typed methods:
@@ -164,8 +154,6 @@ class RestfulService<T extends Core, D extends Dto<Core>> {
 }
 ```
 
----
-
 ## RequestConfig Options
 
 The `config` parameter is an extension of Axios `AxiosRequestConfig`:
@@ -186,8 +174,6 @@ interface RequestConfig<T> extends AxiosRequestConfig {
   brotli?: { quality: number } | boolean; // Enable Brotli compression
 }
 ```
-
----
 
 ## CRUD Examples
 
@@ -306,8 +292,6 @@ const myApts = await apts.find({ query: {} });
 await apts.deleteById(apt.id);
 ```
 
----
-
 ## Streaming (Cursor)
 
 ```typescript
@@ -331,8 +315,6 @@ await platform.identity.users.cursor(
   },
 );
 ```
-
----
 
 ## GraphQL via SDK
 
@@ -359,8 +341,6 @@ const result2 = await gql.query(
 );
 ```
 
----
-
 ## Zone Filtering
 
 Pass `zone` in `config.params`:
@@ -379,8 +359,6 @@ const shared = await platform.identity.users.find(
 );
 ```
 
----
-
 ## Full Response Mode
 
 By default the SDK unwraps the response envelope and returns the data directly. Set `fullResponse: true` to receive the raw Axios response:
@@ -393,8 +371,6 @@ const response = await platform.identity.users.find(
 // response.data = { data: [...], count: N }
 // response.headers['etag'] = '"abc123"'
 ```
-
----
 
 ## Brotli Compression
 
@@ -409,8 +385,6 @@ await platform.identity.users.create(
 // Boolean shorthand (uses default quality)
 await platform.identity.users.create(data, { brotli: true });
 ```
-
----
 
 ## Multi-Tenant Usage
 
@@ -436,8 +410,6 @@ await platform.identity.users.find(
 );
 ```
 
----
-
 ## TypeScript Tips
 
 The `Platform` class accepts a generic `Properties` type parameter for extending entity types with custom properties:
@@ -454,8 +426,6 @@ const platform = Platform.build<MyUserProps>(http);
 const users = await platform.identity.users.find({ query: {} });
 users[0].props?.preferredLanguage; // typed
 ```
-
----
 
 ## Service Client Reference
 
@@ -475,8 +445,6 @@ users[0].props?.preferredLanguage; // typed
 | `platform.logistic` | `.locations`, `.drivers`, `.vehicles`, `.travels`, `.cargoes` |
 | `platform.conjoint` | `.accounts`, `.channels`, `.contacts`, `.members`, `.messages` |
 | `platform.thing` | `.devices`, `.sensors`, `.metrics` |
-
----
 
 ## Customizing the SDK
 

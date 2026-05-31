@@ -1,12 +1,3 @@
----
-prev:
-  text: 'Key Concepts'
-  link: '/getting-started/overview/key-concepts'
-next:
-  text: 'Access Control'
-  link: '/getting-started/overview/key-concepts/access-control'
----
-
 # Core Schema
 
 Every document stored in the Wenex Platform MongoDB carries a fixed set of base fields in addition to its domain-specific payload. These fields are injected or enforced by the Platform and are never set directly by the client at read time.
@@ -93,7 +84,5 @@ Five lifecycle operations control document state:
 | `destroyOne` / `destroyById` | `DELETE /:id/destroy` | Permanently removes the document |
 
 Hard delete (`destroy`) requires the `Manage` scope. Restore requires `Write` scope.
-
----
 
 The `owner`, `shares`, `groups`, and `clients` fields drive the ABAC zone filter on every read. See [ABAC](./access-control) for how the Platform uses them.

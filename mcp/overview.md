@@ -6,8 +6,6 @@ The Wenex Platform gateway exposes an MCP (Model Context Protocol) server at `GE
 **Transport:** Streamable HTTP (HTTP/1.1 chunked)
 **Protocol:** MCP v1 (JSON-RPC over HTTP)
 
----
-
 ## What is MCP?
 
 MCP is an open protocol that lets AI models communicate with external tools using a structured JSON-RPC interface. The platform acts as an MCP server, exposing tools that agents can call to query and manipulate data.
@@ -21,8 +19,6 @@ graph LR
 
     Agent --> MCP --> GW --> TOOLS
 ```
-
----
 
 ## Agent Workflow
 
@@ -49,8 +45,6 @@ sequenceDiagram
         GW-->>Agent: [{ id, username, email }, ...]
     end
 ```
-
----
 
 - See [Tools Reference](./tools) for available built-in and service-specific tools.
 - See [Integration Guide](./integration) for SDK setup, authentication, and security.

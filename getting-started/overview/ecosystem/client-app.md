@@ -1,12 +1,3 @@
----
-prev:
-  text: 'Platform'
-  link: '/getting-started/overview/ecosystem/platform'
-next:
-  text: 'Key Concepts'
-  link: '/getting-started/overview/key-concepts'
----
-
 # Client
 
 A **Client** is an OAuth-registered application that writes and reads data through the Platform Gateway, receives change events via CQRS webhooks, and maintains a local MongoDB copy of its data for low-latency reads and aggregation queries, custom indexing or caching.
@@ -733,8 +724,6 @@ Sensitive fields are masked before persistence. `props` is stored separately so 
 
 Define a `DataType` local to each process class. It accumulates all IDs and objects the process nodes need to share.
 
----
-
 ## Authentication Design
 
 The services app implements the full user-facing authentication flow by wrapping Platform auth endpoints with NATS before/after hooks:
@@ -761,8 +750,6 @@ find(...) { ... }
 
 This maps to a Platform ABAC check: the authenticated user must have `read` permission on the `request:collaborations` resource as configured in the RBAC rules in `context/configs`.
 
----
-
 ## CQRS Webhook Security
 
 The Platform publisher sends a plain HTTP POST to `/cqrs`. Secure it with a shared secret:
@@ -773,8 +760,6 @@ CLIENT_AUTHORIZATION_CQRS=Bearer my-secret-shared-key
 ```
 
 The `AuthGuard` in the workers app checks that the incoming `Authorization` header equals `CLIENT_AUTHORIZATION_CQRS`. Register the same value as `value.authorization` in the `context/configs` CQRS entry on the Platform side.
-
----
 
 ## Environment Variables
 
@@ -808,8 +793,6 @@ The `AuthGuard` in the workers app checks that the incoming `Authorization` head
 | Gateway | 6050 | `GATEWAY_API_PORT` |
 | Services | 7050 | `SERVICES_API_PORT` |
 | Workers | 8050 | `WORKERS_API_PORT` |
-
----
 
 ## Seeding & Initialization
 
@@ -865,8 +848,6 @@ const configs: ConfigDto[] = [
 ];
 ```
 
----
-
 ## Docker & Deployment
 
 ### Infrastructure
@@ -900,8 +881,6 @@ docker-compose --profile platform-seed up  # seed Platform data
 | `/api-json` | OpenAPI JSON spec |
 | `/bullmq` | BullMQ dashboard (services only) |
 | `/graphql` | GraphQL playground (gateway, if enabled) |
-
----
 
 ## Best Practices
 

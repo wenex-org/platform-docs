@@ -14,8 +14,6 @@ Both are submitted as `Authorization: Bearer <token>`. Routes decorated with `@I
 
 See also → [Authorization](/api/authorization) for ABAC, scopes, grants, and the `AuthorityInterceptor`.
 
----
-
 ## Quick Start
 
 ```bash
@@ -45,8 +43,6 @@ You need a `client_id` (OAuth application ID) — ask your admin if you don't ha
 | Backend service calling Platform | JWT — `client_credential` grant, or APT |
 | CI/CD pipeline | APT (personal token) |
 | Long-lived server with strict security | APT or JWT with `strict: true` + API key |
-
----
 
 ## POST /auth/token — Issue a token
 
@@ -181,8 +177,6 @@ sequenceDiagram
     Token Endpoint->>Client: access_token + refresh_token<br/>+ expires_in
 ```
 
----
-
 ## GET /auth/verify — Inspect the current token
 
 Decodes a JWT or resolves an APT from Redis and returns its claims. Useful for debugging, session introspection, or confirming scopes before making downstream calls.
@@ -241,8 +235,6 @@ curl http://localhost:3010/auth/verify \
 ```
 :::
 
----
-
 ## GET /auth/logout — Invalidate the session
 
 Deletes the session record associated with the current token. The blacklist worker then adds the `session` ID to Redis, causing subsequent requests using that token to be rejected by `AuthGuard`.
@@ -283,8 +275,6 @@ After logout:
 ::: tip Already logged out
 If the session is already on the blacklist, `logout` returns `"OK"` without error — the operation is idempotent.
 :::
-
----
 
 ## POST /auth/check — Validate a TOTP code
 
@@ -349,8 +339,6 @@ if (verified) {
 }
 ```
 
----
-
 ## Scope Hierarchy & Elevation
 
 Scopes in Wenex follow a hierarchical structure where higher-privilege scopes can satisfy lower-privilege requirements. This is called **scope elevation**.
@@ -403,8 +391,6 @@ whole
 ### The "whole" Scope
 
 Wildcard — grants access to all operations across all services. Only assign to trusted admin accounts.
-
----
 
 ## The strict flag and x-api-key
 
@@ -639,8 +625,6 @@ x-api-key: <encrypted-ApiToken>
 6. **Log and monitor usage** — alert on requests from unexpected IPs or repeated failures
 7. **Revoke compromised keys immediately** — delete the token, generate a replacement, restart services
 
----
-
 ## APTs — Auth Personal Tokens
 
 APTs are long-lived, revocable credentials stored in Redis and used for server-to-server authentication, CI/CD pipelines, and AI agents. They carry the same claims as a JWT and are usable everywhere a JWT is accepted.
@@ -774,8 +758,6 @@ curl http://localhost:3010/content/notes \
   -H "Authorization: Bearer $WENEX_TOKEN"
 ```
 
----
-
 ## POST /auth/can — Check permissions
 
 Checks whether the current token has permission to perform a specific action on a specific resource. Useful for client applications to determine feature availability or UI visibility before attempting an operation.
@@ -849,8 +831,6 @@ const canDelete = await fetch('/auth/can', {
 if (canDelete) showDeleteButton();
 else hideDeleteButton();
 ```
-
----
 
 ## Client Integration
 
@@ -1159,8 +1139,6 @@ const TOKEN = "eyJ...";
 7. Call `/auth/logout` on user sign-out to invalidate the session server-side
 8. Monitor authentication logs — watch for failed attempts or unusual IPs
 
----
-
 ## Troubleshooting
 
 ### 401 Unauthorized: Missing or invalid token
@@ -1204,8 +1182,6 @@ curl -X POST http://localhost:3010/auth/token \
 
 **Cause:** Too many failed login attempts. **Fix:** Wait 15 minutes, verify your credentials.
 
----
-
 ## Request headers reference
 
 | Header | Required | Example | Description |
@@ -1217,8 +1193,6 @@ curl -X POST http://localhost:3010/auth/token \
 | `x-request-id` | No | `uuid-v4` | Trace ID — auto-generated if absent |
 | `x-zone` | No | `own,share` | Ownership zone filter — default `own` |
 
----
-
 ## Error responses
 
 | Status | Meaning |
@@ -1226,8 +1200,6 @@ curl -X POST http://localhost:3010/auth/token \
 | `401 Unauthorized` | Missing, expired, or invalid token |
 | `403 Forbidden` | Token valid but `strict` requires `x-api-key`, or key is invalid |
 | `429 Too Many Requests` | Rate limit exceeded |
-
----
 
 ## Summary: All Flows at a Glance
 
@@ -1238,8 +1210,6 @@ curl -X POST http://localhost:3010/auth/token \
 | **Logout** | `GET /auth/logout` | Invalidate session | Bearer token | `{ "result": "OK" }` |
 | **Can** | `POST /auth/can` | Check permission before action | action + object | `{ granted: boolean, policies: [...] }` |
 | **Check** | `POST /auth/check` | Validate TOTP code | secret + 6-digit code | `{ "result": "OK" \| "NOK" }` |
-
----
 
 ## See Also
 

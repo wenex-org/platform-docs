@@ -1,12 +1,3 @@
----
-prev:
-  text: 'Core Schema'
-  link: '/getting-started/overview/key-concepts/core-schema'
-next:
-  text: 'Coworkers Space'
-  link: '/getting-started/overview/key-concepts/coworkers-space'
----
-
 # Access Control
 
 The Platform enforces access control through **Attribute-Based Access Control (ABAC)** — a model where read visibility is determined entirely by attributes on each document, not by roles or hardcoded rules.
@@ -148,8 +139,6 @@ AuthorityInterceptor refines query (see below)
 Service executes and returns data
 ```
 
----
-
 ## Authority Interceptor: Query Refinement
 
 After all guards pass, the **AuthorityInterceptor** (`/libs/common/src/core/interceptors/mongo/authority.interceptor.ts`) runs on **read requests** to refine MongoDB queries based on ownership and grant restrictions.
@@ -198,8 +187,6 @@ The modified request continues to the service layer with:
 - All validation complete ✅
 
 If any check fails, `403 Forbidden` is returned immediately.
-
----
 
 ## Grant System
 
@@ -297,8 +284,6 @@ The `time` field enables temporal access control:
 
 Request outside this window → `403 Forbidden`
 
----
-
 ## ABACL Permission Resolution
 
 The **AccessControl Library** (Redis-backed) evaluates grants to determine if a token has permission. This is called **ABACL evaluation** (Attribute-Based Access Control List).
@@ -366,8 +351,6 @@ The **AccessControl Library** (Redis-backed) evaluates grants to determine if a 
 
 Database returns only users matching the OR filter.
 
----
-
 ## Scope vs Policies vs Grants
 
 The three authorization layers work together but have distinct roles:
@@ -414,15 +397,11 @@ flowchart LR
 | `ValidationInterceptor` | Validates the remaining body against the DTO schema |
 | `OwnershipInterceptor` | Injects `owner`, `groups`, `clients`, `created_by`, `created_in` (or `updated_by/in`) from the token |
 
----
-
 ## Platform Philosophy
 
 The Platform enforces **data shape and ABAC only** — no domain-specific business rules. Rules like "a user can only have one active wallet" or "invoices can only be paid once" belong in the Client application.
 
 See [Core Schema](./core-schema) for the document fields that ABAC operates on, and [Coworkers Space](./coworkers-space) for how the `clients[]` field enables cross-application data sharing.
-
----
 
 ## See Also
 

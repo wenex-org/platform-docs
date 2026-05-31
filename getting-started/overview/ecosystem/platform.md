@@ -1,12 +1,3 @@
----
-prev:
-  text: 'Ecosystem'
-  link: '/getting-started/overview/ecosystem'
-next:
-  text: 'Client App'
-  link: '/getting-started/overview/ecosystem/client-app'
----
-
 # Platform
 
 The Wenex Platform is the shared backend infrastructure that every client application in the ecosystem writes to, reads from, and receives events from. It owns data shape, access control, document lifecycle, and event delivery — nothing more. All domain business logic lives in client applications.

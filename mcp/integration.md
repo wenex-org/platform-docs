@@ -35,8 +35,6 @@ const result = await mcp.callTool({
 console.log(result);
 ```
 
----
-
 ## Using `mcp-client.ts`
 
 The platform ships a ready-to-use interactive MCP client at [`mcp-client.ts`](../../mcp-client.ts) that connects to the gateway and uses Ollama as the LLM backend.
@@ -89,8 +87,6 @@ const client = new ClientMCP({
 });
 ```
 
----
-
 ## Authentication for MCP
 
 MCP connections require an APT (Auth Personal Token) passed as a Bearer token in the HTTP headers:
@@ -116,8 +112,6 @@ curl -X POST http://localhost:3010/auth/apts \
 
 Store the returned `token` — it is shown only once.
 
----
-
 ## Observability
 
 MCP requests flow through the same middleware pipeline as REST requests:
@@ -126,8 +120,6 @@ MCP requests flow through the same middleware pipeline as REST requests:
 - OpenTelemetry traces capture tool execution spans
 - `X-Request-ID` header propagates through MCP calls for correlation
 - Rate limiting applies to MCP connections per-token
-
----
 
 ## Security Considerations
 

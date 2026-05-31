@@ -36,8 +36,6 @@ Verifies the agent's current APT (Auth Personal Token) and returns the decoded c
 }
 ```
 
----
-
 ### `read_documentations`
 
 Loads MCP specification documentation by URI. This allows agents to self-serve context about the platform's capabilities, resources, and operations.
@@ -73,8 +71,6 @@ Loads MCP specification documentation by URI. This allows agents to self-serve c
 
 Version parameter: `v=c` (compact — fewer tokens) or `v=e` (extended — more detail).
 
----
-
 ## Service-Specific MCP Tools
 
 Each gateway module can register additional MCP tools in its `*.router.ts` file. These tools expose the service's CRUD operations as named MCP tools.
@@ -85,8 +81,6 @@ Router files are located at:
 apps/gateway/src/modules/{service}/crafts/{collection}/{collection}.router.ts
 apps/gateway/src/app.router.ts  (core tools: auth_verify, read_documentations)
 ```
-
----
 
 ## MCP Documentation Spec Files
 

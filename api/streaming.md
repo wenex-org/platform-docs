@@ -4,8 +4,6 @@ Every collection exposes a `/cursor` endpoint that streams documents as Server-S
 
 **Endpoint:** `GET /{service}/{collection}/cursor`
 
----
-
 ## How It Works
 
 ```mermaid
@@ -30,8 +28,6 @@ The gateway:
 3. Writes each filtered item to the HTTP response as an SSE `data:` frame.
 4. Signals completion with an `event: end` frame and closes the connection.
 
----
-
 ## Response Headers
 
 The gateway sets these headers automatically:
@@ -41,8 +37,6 @@ Transfer-Encoding: chunked
 Content-Type: text/event-stream
 Cache-Control: private, no-cache, no-store
 ```
-
----
 
 ## SSE Frame Format
 
@@ -70,8 +64,6 @@ data: {"statusCode":500,"message":"Internal server error"}
 
 ```
 
----
-
 ## curl Example
 
 ```bash
@@ -84,8 +76,6 @@ curl -N "$BASE/identity/users/cursor" \
 ```
 
 The `-N` flag disables curl's output buffering, which is required to see SSE events in real time.
-
----
 
 ## Filter for Cursor
 
@@ -106,8 +96,6 @@ curl -N "$BASE/identity/users/cursor" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: text/event-stream"
 ```
-
----
 
 ## JavaScript / Browser Example
 
@@ -151,8 +139,6 @@ await fetchEventSource('http://localhost:3010/identity/users/cursor?query=%7B%7D
 });
 ```
 
----
-
 ## SDK Example
 
 The `@wenex/sdk` `RestfulService.cursor()` method wraps `fetchEventSource`:
@@ -180,8 +166,6 @@ await platform.identity.users.cursor(
 );
 ```
 
----
-
 ## Zone Filtering with SSE
 
 The cursor endpoint respects the same `zone` query parameter as the regular `find` endpoint:
@@ -194,8 +178,6 @@ curl -N "$BASE/identity/users/cursor?query={}&zone=own,share" \
 
 Only documents in the specified zones are emitted. Documents filtered out by `AuthorityInterceptor` are silently dropped from the stream.
 
----
-
 ## Error Handling
 
 | Scenario | What happens |
@@ -206,8 +188,6 @@ Only documents in the specified zones are emitted. Documents filtered out by `Au
 | Client disconnects | Server terminates gRPC stream |
 
 Because SSE is one-directional, errors after the stream has started are communicated as `event: error` frames rather than HTTP status codes.
-
----
 
 ## Comparison: Cursor vs Find
 

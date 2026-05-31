@@ -2,8 +2,6 @@
 
 See also → [Authentication](/api/authentication) for token endpoints, APTs, and the `strict` flag · [Authorization](/api/authorization) for ABAC, grants, scopes, and the `AuthorityInterceptor`
 
----
-
 **Port:** REST `:3020` · gRPC `:5020`
 
 Handles all authentication flows, token management, personal API keys, and OAuth permission grants. Unlike every other service, `auth` does not follow the standard 14-operation CRUD pattern for its primary endpoint.
