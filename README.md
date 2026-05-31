@@ -11,8 +11,8 @@ Wenex Platform is a large-scale distributed microservices system built with Nest
 | Document | Description |
 | --- | --- |
 | [Getting Started](./getting-started/) | Clone, install, seed, and run the platform |
-| [**Ecosystem & ABAC Model**](./ecosystem.md) | **How Clients, Coworkers, and the Platform relate — read this first** |
-| [Architecture](./architecture.md) | System design, request flow, data layer, Mermaid diagrams |
+| [**Ecosystem & ABAC Model**](./getting-started/overview/ecosystem/) | **How Clients, Coworkers, and the Platform relate — read this first** |
+| [Platform Architecture](./getting-started/overview/ecosystem/platform) | System design, request flow, communication topology, design principles |
 | **API Reference** | |
 | [Authentication](./api/authentication.md) | Tokens, APTs, scopes, RBAC — with curl examples |
 | [REST Reference](./api/rest-reference.md) | All REST endpoints, headers, responses, curl examples |
@@ -22,11 +22,11 @@ Wenex Platform is a large-scale distributed microservices system built with Nest
 | **SDK** | |
 | [SDK Guide](./sdk/) | `@wenex/sdk` installation, configuration, and examples |
 | **Services** | |
-| [Service Catalog](./getting-started/services) | All 15 microservices — purpose, ports, collections |
+| [Service Catalog](./getting-started/services/) | All 15 microservices — purpose, ports, collections |
 | **MCP** | |
 | [MCP Integration](./mcp/overview.md) | MCP tools, AI agent usage, `mcp-client.ts` |
 | **Client Development** | |
-| [Client Development Guide](./client-development.md) | Building a client app — canonical structure, patterns, best practices |
+| [Client Development Guide](./getting-started/overview/ecosystem/client-app) | Building a client app — canonical structure, patterns, best practices |
 
 ---
 
