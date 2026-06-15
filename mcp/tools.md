@@ -1,44 +1,38 @@
 # MCP Tools Reference
 
-## Built-in MCP Tools
+The gateway registers a **fixed set of 12 MCP tools** — 2 core tools plus 10 generic
+resource-CRUD tools. There are **no per-collection tools** (e.g. there is no
+`find_identity_users`); instead, every resource tool takes a `resource` argument that
+selects the target service/collection.
 
-The gateway registers two core tools available to all agents.
+## Core Tools
 
 ### `auth_verify`
 
-Verifies the agent's current APT (Auth Personal Token) and returns the decoded claims.
+Verifies the agent's current token (JWT or APT) and returns the decoded claims.
 
-**Call this tool first** before any resource operation to confirm identity and understand what scopes are available.
+**Call this tool first** before any resource operation to confirm identity and understand
+which scopes are available.
 
-**Input schema:**
+**Input:** optional `headers` (object) to override request headers.
 
-```json
-{
-  "type": "object",
-  "properties": {
-    "headers": {
-      "type": "object",
-      "description": "Optional request headers to inspect"
-    }
-  }
-}
-```
-
-**Example output:**
+**Example output** (the same `JwtToken` shape returned by `GET /auth/verify`):
 
 ```json
 {
-  "sub": "64a1b2c3d4e5f6a7b8c9d0e1",
+  "type": "access",
+  "cid": "64a1b2c3d4e5f6a7b8c9d0e1",
+  "uid": "64a1b2c3d4e5f6a7b8c9d0e2",
   "scope": "read:identity:users read:financial:transactions",
-  "zone": "own",
-  "exp": 1748908800,
-  "client_id": "64a1b2c3d4e5f6a7b8c9d0e2"
+  "subject": "agent@example.com",
+  "domain": "example.com"
 }
 ```
 
 ### `read_documentations`
 
-Loads MCP specification documentation by URI. This allows agents to self-serve context about the platform's capabilities, resources, and operations.
+Loads MCP specification documentation by URI so agents can self-serve context about the
+platform's capabilities, resources, and operations.
 
 **Input schema:**
 
@@ -49,67 +43,84 @@ Loads MCP specification documentation by URI. This allows agents to self-serve c
   "properties": {
     "uri": {
       "type": "string",
-      "description": "Documentation URI, e.g. docs://core/specification?v=c"
+      "description": "Documentation URI, e.g. docs://core/specification"
     }
   }
 }
 ```
 
-**URI patterns:**
+**Available URIs:**
 
 | URI | Content |
 |---|---|
-| `docs://core/specification?v=c` | Compact canonical MCP specification |
-| `docs://core/specification?v=e` | Extended canonical MCP specification |
-| `docs://core/resource-specification?v=c` | Service and collection catalog (compact) |
-| `docs://core/auth-specification?v=c` | Authentication mechanics (compact) |
-| `docs://core/agent-guidance?v=c` | Agent guidance and MongoDB patterns |
-| `docs://core/cross-service-pattern?v=c` | Multi-service workflow patterns |
-| `docs://service/identity?v=c` | Identity service documentation |
-| `docs://service/financial?v=c` | Financial service documentation |
-| `docs://service/career?v=c` | Career service documentation |
+| `docs://readme` | Routing entrypoint and load-order rules |
+| `docs://core/specification` | Canonical MCP rules, metadata headers, operations |
+| `docs://core/resource-specification` | Service and collection catalog |
+| `docs://core/auth-specification` | APTs, scopes, grants, subjects, zones |
+| `docs://core/agent-guidance` | MongoDB query patterns and Mermaid diagram guidance |
+| `docs://core/cross-service-pattern` | Multi-service workflow patterns |
+| `docs://service/identity-specification` | Identity service (users, profiles, sessions) |
+| `docs://service/financial-specification` | Financial service (accounts, wallets, …) |
+| `docs://service/{service}-specification` | One per service — see the list below |
 
-Version parameter: `v=c` (compact — fewer tokens) or `v=e` (extended — more detail).
+## Resource CRUD Tools
 
-## Service-Specific MCP Tools
+The remaining 10 tools each accept a `resource` argument (the target `service/collection`)
+plus the relevant `filter` / `params` / `data` / `headers`. They mirror the REST CRUD
+surface:
 
-Each gateway module can register additional MCP tools in its `*.router.ts` file. These tools expose the service's CRUD operations as named MCP tools.
+| Tool | REST equivalent | Purpose |
+|---|---|---|
+| `count` | `GET /{resource}/count` | Count matching documents |
+| `create` | `POST /{resource}` | Create one document |
+| `create_bulk` | `POST /{resource}/bulk` | Create many documents |
+| `find` | `GET /{resource}` | Find with filter / pagination |
+| `find_one` | `GET /{resource}/:id` | Find one by `params.id` (ObjectId) or `params.ref` |
+| `update_one` | `PATCH /{resource}/:id` | Update one by id |
+| `update_bulk` | `PATCH /{resource}/bulk` | Update many matching a query |
+| `delete_one` | `DELETE /{resource}/:id` | Soft-delete one |
+| `restore_one` | `PUT /{resource}/:id/restore` | Restore a soft-deleted document |
+| `destroy_one` | `DELETE /{resource}/:id/destroy` | Hard-delete one (permanent) |
 
-Router files are located at:
+### The `resource` enum
 
+`resource` is a string enum of `service/collection` values. Most CRUD collections across
+the 14 services are addressable; a few entries (e.g. `auth/apts`, `touch/push-histories`)
+are intentionally **not** exposed as MCP resources and return a "not implemented" error.
+
+```jsonc
+// Example: find active identity users
+{
+  "resource": "identity/users",
+  "filter": { "query": { "status": "active" }, "pagination": { "limit": 10 } }
+}
 ```
-apps/gateway/src/modules/{service}/crafts/{collection}/{collection}.router.ts
-apps/gateway/src/app.router.ts  (core tools: auth_verify, read_documentations)
-```
+
+Filter shape matches the REST [filter system](../api/filtering.md): `query` (object),
+`pagination` (`{ skip ≥ 0, limit 1..50, sort }`), `populate` (`[{ path, model, match,
+select, options }]`), `projection`. `find_one` additionally accepts `params: { id?, ref? }`.
 
 ## MCP Documentation Spec Files
 
-The `mcp/` directory contains the specification files served by `read_documentations`:
+The `mcp/` directory contains the specification files served by `read_documentations`.
+Each spec is a **single file** (there are no compact/extended variants):
 
 ```
 mcp/
 ├── readme.md                              # MCP routing guide (not a tool)
 ├── core/
-│   ├── -specification.compact.md          # Canonical MCP rules (compact)
-│   ├── -specification.extended.md         # Canonical MCP rules (extended)
-│   ├── resource-specification.compact.md  # Service/collection catalog
-│   ├── resource-specification.extended.md
-│   ├── auth-specification.compact.md      # Auth mechanics
-│   ├── auth-specification.extended.md
-│   ├── agent-guidance.compact.md          # MongoDB query patterns for agents
-│   ├── agent-guidance.extended.md
-│   └── cross-service-pattern.compact.md   # Multi-service workflow patterns
+│   ├── -specification.md                  # Canonical MCP rules
+│   ├── resource-specification.md          # Service/collection catalog
+│   ├── auth-specification.md              # Auth mechanics
+│   ├── agent-guidance.md                  # MongoDB query patterns for agents
+│   └── cross-service-pattern.md           # Multi-service workflow patterns
 └── service/
-    ├── identity.compact.md
-    ├── identity.extended.md
-    ├── financial.compact.md
-    ├── financial.extended.md
-    └── ... (one pair per service)
+    ├── identity-specification.md
+    ├── financial-specification.md
+    ├── career-specification.md
+    └── … (one per service: conjoint, content, context, domain, essential,
+           general, logistic, special, thing, touch)
 ```
 
-**Compact vs Extended:**
-
-| Variant | Use when |
-|---|---|
-| `?v=c` (compact) | Agent context is limited; decision-first, minimal prose |
-| `?v=e` (extended) | Agent needs full rationale, richer examples, edge cases |
+> `docs://core/specification` is the canonical URI; on disk it maps to
+> `core/-specification.md`. Service URIs are `docs://service/{service}-specification`.

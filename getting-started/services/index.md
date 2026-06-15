@@ -1,6 +1,6 @@
 # Services
 
-Wenex Platform consists of 15 domain microservices. All services are NestJS applications that expose a REST API and a gRPC server.
+Wenex Platform consists of 14 domain microservices. All services are NestJS applications that expose a REST API and a gRPC server.
 
 ## Architecture Summary
 

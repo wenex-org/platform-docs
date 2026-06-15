@@ -37,11 +37,11 @@ sequenceDiagram
     Agent->>GW: callTool("auth_verify")
     GW-->>Agent: { sub, scope, exp }
 
-    Agent->>GW: callTool("read_documentations", { uri: "docs://core/resource-specification?v=c" })
+    Agent->>GW: callTool("read_documentations", { uri: "docs://core/resource-specification" })
     GW-->>Agent: service catalog markdown
 
     loop Resource operations
-        Agent->>GW: callTool("find_identity_users", { filter: { query: {} } })
+        Agent->>GW: callTool("find", { resource: "identity/users", filter: { query: {} } })
         GW-->>Agent: [{ id, username, email }, ...]
     end
 ```

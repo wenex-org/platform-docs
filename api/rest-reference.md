@@ -1,6 +1,6 @@
 # REST API Reference
 
-The gateway exposes a uniform REST interface for all 15 domain services. Every collection shares the same 11-endpoint pattern. This document covers the pattern, all available collections, and curl examples using the `identity/users` collection.
+The gateway exposes a uniform REST interface for all 14 domain services. Every collection shares the same 11-endpoint pattern. This document covers the pattern, all available collections, and curl examples using the `identity/users` collection.
 
 **Base URL:** `http://localhost:3010`
 
@@ -341,8 +341,8 @@ curl -X DELETE "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1/destroy" \
 | Emails | `/touch/emails` | Outbound email records |
 | Notices | `/touch/notices` | In-app notifications |
 | Pushes | `/touch/pushes` | Push notification records |
-| SMS | `/touch/sms` | SMS records |
-| Histories | `/touch/histories` | Notification delivery history |
+| SMSs | `/touch/smss` | SMS records |
+| Push Histories | `/touch/push-histories` | Push notification delivery history |
 
 ### Content Service (`/content`)
 
@@ -421,16 +421,23 @@ These fields are platform-managed and present on every entity returned by the AP
 |---|---|---|
 | `id` | string | MongoDB ObjectId (as string) |
 | `ref` | string | Optional human-readable unique reference |
-| `owner` | string | MongoId of the owning user |
+| `owner` | string | MongoId of the owning user/app/client |
 | `shares` | string[] | MongoIds of users with shared access |
 | `groups` | string[] | Email/FQDN list for group access |
-| `clients` | string[] | MongoIds of OAuth clients |
-| `created_at` | ISO 8601 | Creation timestamp |
-| `updated_at` | ISO 8601 | Last update timestamp |
-| `deleted_at` | ISO 8601 \| null | Soft-delete timestamp |
-| `version` | number | Optimistic concurrency version |
+| `clients` | string[] | MongoIds of OAuth clients (and coworkers) |
+| `created_at` / `created_by` / `created_in` | ISO 8601 / string / string | Creation timestamp + actor + app/client context |
+| `updated_at` / `updated_by` / `updated_in` | ISO 8601 / string / string | Last-update timestamp + actor + context |
+| `deleted_at` / `deleted_by` / `deleted_in` | ISO 8601 \| null / string / string | Soft-delete timestamp + actor + context |
+| `restored_at` / `restored_by` / `restored_in` | ISO 8601 / string / string | Restore timestamp + actor + context |
+| `identity` | string | Polymorphic single-relation field (see [Filtering → populate](./filtering.md)) |
+| `relations` | string[] | Polymorphic multi-relation field |
+| `description` | string | Searchable text summary |
+| `version` | string | Document version string (SemVer, default `"1.0.0"`) |
 | `tags` | string[] | Free-form tags |
 | `props` | object | Free-form extra properties |
+| `rand` / `timestamp` | string / string | Platform-managed helper values |
+
+> For the authoritative field reference (types, who-sets-what, lifecycle), see [Core Schema](../getting-started/overview/key-concepts/core-schema.md).
 
 ## Swagger UI
 

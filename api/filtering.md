@@ -132,11 +132,18 @@ Populate resolves MongoId references to embedded documents. Each entry in the `p
 
 ```typescript
 interface PopulateDto {
-  path:       string;          // Field path to populate (e.g. "owner")
-  select?:    string[];        // Fields to include from the related document
-  populate?:  PopulateDto[];   // Nested populate (deep joins)
+  path:     string;            // Field path to populate (e.g. "owner", "identity", "relations")
+  model?:   string;            // Mongoose model of the target collection —
+                               // REQUIRED for the polymorphic `identity` / `relations` fields
+  select?:  Projection;        // Fields to include / exclude from the related document
+  match?:   Query;             // Filter applied to the populated documents
+  options?: PaginationDto;     // limit / skip / sort for the populated documents
 }
 ```
+
+::: warning `model` is required for polymorphic relations
+`identity` (single) and `relations` (array) are polymorphic — they can point at any collection — so a `populate` entry for either **must** include `model` (the target collection's Mongoose model name, e.g. `IdentityUser`, `ConjointMember`, `FinancialWallet`). Fixed-target fields like `owner` do not need it. Omitting `model` on a relational field is rejected server-side (`population "model" is required`).
+:::
 
 ### Examples
 
@@ -156,13 +163,11 @@ interface PopulateDto {
   ]
 }
 
-// Nested populate (populate the owner of the owner)
+// Polymorphic fields — `model` selects the target collection
 {
   "populate": [
-    {
-      "path": "owner",
-      "populate": [{ "path": "profile" }]
-    }
+    { "path": "identity",  "model": "IdentityUser" },
+    { "path": "relations", "model": "ConjointMember", "select": ["id", "username"] }
   ]
 }
 ```

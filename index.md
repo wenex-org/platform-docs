@@ -21,7 +21,7 @@ features:
 
   - icon: 🔗
     title: RESTful, GraphQL, and gRPC
-    details: A unified gateway exposing REST, GraphQL, and gRPC across 15 domain microservices with a consistent 14-operation CRUD surface on every collection.
+    details: A unified gateway exposing REST, GraphQL, and gRPC across 14 domain microservices with a consistent CRUD surface on every collection.
     link: /api/rest-reference
 
   - icon: 📊

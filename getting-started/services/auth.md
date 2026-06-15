@@ -4,7 +4,7 @@ See also → [Authentication](/api/authentication) for token endpoints, APTs, an
 
 **Port:** REST `:3020` · gRPC `:5020`
 
-Handles all authentication flows, token management, personal API keys, and OAuth permission grants. Unlike every other service, `auth` does not follow the standard 14-operation CRUD pattern for its primary endpoint.
+Handles all authentication flows, token management, personal API keys, and OAuth permission grants. Unlike every other service, `auth` does not follow the standard CRUD pattern for its primary endpoint.
 
 ## Collections
 
@@ -20,14 +20,10 @@ The primary auth endpoint is not a CRUD collection. It exposes named operations:
 
 | Operation | HTTP | Description |
 | --- | --- | --- |
-| `token` | `POST /auth/token` | Issue JWT (public — no auth header required) |
-| `register` | `POST /auth/register` | Register a new user account |
-| `otp` | `POST /auth/otp` | Request a one-time password |
-| `verify` | `POST /auth/verify` | Confirm OTP and activate account |
-| `repass` | `POST /auth/repass` | Forgot / reset password |
-| `oauth` | `POST /auth/oauth` | OAuth (Google / social) login |
-| `logout` | `POST /auth/logout` | Invalidate the current token |
-| `check` | `GET /auth/check` | Validate whether the current token is still live |
+| `token` | `POST /auth/token` | Issue a JWT (public — no auth header required) |
+| `verify` | `GET /auth/verify` | Decode the current token (JWT or APT) and return its claims |
+| `logout` | `GET /auth/logout` | Invalidate the current session (blacklists it) |
+| `check` | `POST /auth/check` | Validate a TOTP (one-time password) code |
 | `can` | `POST /auth/can` | ABAC policy evaluation via `abacl` |
 
 > `POST /auth/token` is `@IsPublic()` — no `Authorization` header required.
@@ -56,10 +52,9 @@ OAuth permission grants define what actions a subject (user or role) may perform
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `action` | ✅ | `Action` enum | `read`, `write`, `manage` |
-| `subject` | ✅ | string | Subject identifier (e.g. `guest@example.com`) |
-| `resource` | ✅ | string | Resource identifier (e.g. `identity:users`) |
-| `domain` | ✅ | string | FQDN of the tenant domain |
+| `action` | ✅ | `Action` enum | `read`, `write`, `manage`, or a custom action |
+| `subject` | ✅ | string | Subject identifier — `{username}@{domain}` (e.g. `guest@example.com`) |
+| `object` | ✅ | `Resource` | Resource identifier (e.g. `identity:users` or `identity:*`) |
 
 ### Grant Behaviors
 

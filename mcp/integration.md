@@ -42,8 +42,8 @@ The platform ships a ready-to-use interactive MCP client at [`mcp-client.ts`](..
 ### Prerequisites
 
 ```bash
-# Start a local Ollama instance
-ollama run qwen3:30b
+# Start a local Ollama instance (the client's default model)
+ollama run qwen3.6:35b
 
 # Or tunnel from a remote GPU
 ssh -L 11434:localhost:11434 user@gpu-host
@@ -105,8 +105,8 @@ curl -X POST http://localhost:3010/auth/apts \
   -H "Content-Type: application/json" \
   -d '{
     "name": "my-ai-agent",
-    "scope": "read:identity:users read:financial:transactions",
-    "description": "Read-only agent for analytics"
+    "scopes": ["read:identity:users", "read:financial:transactions"],
+    "subjects": ["analytics-agent@example.com"]
   }'
 ```
 

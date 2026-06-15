@@ -366,8 +366,8 @@ curl -X POST http://localhost:3010/graphql \
 | Emails | `TouchEmail` | `createTouchEmail` |
 | Notices | `TouchNotice` | `findTouchNotice` |
 | Pushes | `TouchPush` | `createTouchPush` |
-| SMS | `TouchSms` | `createTouchSms` |
-| Histories | `TouchHistory` | `findTouchHistory` |
+| SMSs | `TouchSms` | `createTouchSms` |
+| Push Histories | `TouchPusHistory` | `findTouchPusHistory` |
 
 ### Content Service
 

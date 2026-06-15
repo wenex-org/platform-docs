@@ -10,7 +10,7 @@ Wenex Platform supports two token types for API access.
 | **Backed by** | Signed JWT (RS256) | Redis — key `auth:apt:<suffix>` |
 | **Strict support** | ✅ | ✅ |
 
-Both are submitted as `Authorization: Bearer <token>`. Routes decorated with `@IsPublic()` are the only exceptions — currently just `POST /auth/token`.
+Both are submitted as `Authorization: Bearer <token>`. Routes decorated with `@IsPublic()` are the only exceptions — currently `POST /auth/token` and the public file endpoint `GET /special/files/:id/download`.
 
 See also → [Authorization](/api/authorization) for ABAC, scopes, grants, and the `AuthorityInterceptor`.
 
@@ -1191,7 +1191,7 @@ curl -X POST http://localhost:3010/auth/token \
 | `x-api-key` | Conditional | `<encrypted>` | Required when `token.strict === true` |
 | `x-domain` | No | `my-tenant.com` | Override the tenant domain |
 | `x-request-id` | No | `uuid-v4` | Trace ID — auto-generated if absent |
-| `x-zone` | No | `own,share` | Ownership zone filter — default `own` |
+| `x-zone` | No | `own,share` | Ownership zone filter — default `own,share` |
 
 ## Error responses
 

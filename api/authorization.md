@@ -367,7 +367,7 @@ For every field in the Mongo query, the interceptor validates it against the gra
 
 ### 3. Zone exploit checking
 
-The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or query param (default `own`).
+The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or query param (default `own,share`).
 
 | Zone | Automatic filter |
 |---|---|
@@ -416,14 +416,7 @@ Zone conditions:
 
 Assign roles to users and create grants per role. Using `@role` subjects makes permissions easy to manage at scale.
 
-**1. Create roles:**
-
-```bash
-curl -X POST http://localhost:3010/auth/roles \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{ "name": "editor" }'
-```
+**1. Roles are virtual subjects** — there is no role registry to create and no `/auth/roles` endpoint. Any `@role-name` string (e.g. `@editor`) is used directly as a grant `subject` and as a user `subjects[]` entry.
 
 **2. Create grants for each role:**
 
@@ -461,13 +454,13 @@ curl -X POST http://localhost:3010/auth/grants \
   }'
 ```
 
-**3. Assign a role to a user:**
+**3. Assign a role to a user** (roles live in the user's `subjects[]` field):
 
 ```bash
 curl -X PATCH http://localhost:3010/identity/users/user-123 \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "roles": ["@editor"] }'
+  -d '{ "subjects": ["@editor"] }'
 ```
 
 **Client-side check:**
@@ -602,7 +595,7 @@ Records created by the web app automatically include `"clients": ["web-app-id"]`
 
 Grant access for limited time periods — contractors, seasonal staff, maintenance windows.
 
-**Contractor access (fixed duration):**
+**Contractor access (recurring business-hours window):**
 
 ```bash
 curl -X POST http://localhost:3010/auth/grants \
@@ -613,14 +606,14 @@ curl -X POST http://localhost:3010/auth/grants \
     "action": "read",
     "object": "identity:users",
     "time": [
-      { "start": "2026-06-01T00:00:00Z", "end": "2026-08-31T23:59:59Z" }
+      { "cron_exp": "0 9 * * 1-5", "duration": 32400 }
     ]
   }'
 ```
 
-June–August 2026: Access allowed ✅ — Any other time: `403 Forbidden` ❌
+`cron_exp` opens the window (Mon–Fri at 09:00) and `duration` keeps it open for 9 hours (32400s). Inside the window: allowed ✅ — outside it: `403 Forbidden` ❌
 
-**Seasonal access with multiple windows (OR logic):**
+**Multiple windows (OR logic):**
 
 ```bash
 curl -X POST http://localhost:3010/auth/grants \
@@ -631,11 +624,13 @@ curl -X POST http://localhost:3010/auth/grants \
     "action": "write",
     "object": "financial:invoices",
     "time": [
-      { "start": "2026-11-15T00:00:00Z", "end": "2026-12-31T23:59:59Z" },
-      { "start": "2027-01-01T00:00:00Z", "end": "2027-01-31T23:59:59Z" }
+      { "cron_exp": "0 8 * * 6,0", "duration": 36000 },
+      { "cron_exp": "0 18 * * 1-5", "duration": 14400 }
     ]
   }'
 ```
+
+Each entry is an independent recurring window; the grant is active if **any** window is currently open (weekends from 08:00 for 10h, or weekday evenings from 18:00 for 4h).
 
 **Maintenance window (Friday night only):**
 
@@ -648,12 +643,12 @@ curl -X POST http://localhost:3010/auth/grants \
     "action": "manage",
     "object": "auth:clients",
     "time": [
-      { "start": "2026-05-31T22:00:00Z", "end": "2026-06-01T06:00:00Z" }
+      { "cron_exp": "0 22 * * 5", "duration": 28800 }
     ]
   }'
 ```
 
-Access is automatically denied outside the windows — no manual revocation needed.
+Opens every Friday at 22:00 for 8 hours (28800s). Access is automatically denied outside the window — no manual revocation needed.
 
 ### Pattern 6: Location-based access (IP restrictions)
 
@@ -842,12 +837,12 @@ curl -X POST http://localhost:3010/auth/grants \
     "field": ["status", "notes"],
     "location": ["203.0.113.0/24", "10.0.0.0/8"],
     "time": [
-      { "start": "2026-01-01T00:00:00Z", "end": "2026-12-31T23:59:59Z" }
+      { "cron_exp": "0 9 * * 1-5", "duration": 32400 }
     ]
   }'
 ```
 
-This grant allows only managers to update `status` and `notes` on pending invoices in their department, from office or VPN, during 2026.
+This grant allows only managers to update `status` and `notes` on pending invoices in their department, from office or VPN, during weekday business hours (Mon–Fri 09:00 for 9h).
 
 ## Full example: read a user record
 

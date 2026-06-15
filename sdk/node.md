@@ -3,7 +3,6 @@
 The `@wenex/sdk` package is the official TypeScript/JavaScript client for the Wenex Platform. It wraps the REST API with typed methods, handles Brotli compression, and exposes RxJS-compatible patterns.
 
 **npm:** [`@wenex/sdk`](https://www.npmjs.com/package/@wenex/sdk)
-**Version:** 1.3.4
 **Repository:** [wenex-org/platform-sdk](https://github.com/wenex-org/platform-sdk)
 
 ## Installation
@@ -264,10 +263,10 @@ const { access_token } = await auth.token({
 
 // Verify token
 const claims = await auth.verify();
-console.log(claims.sub, claims.scope);
+console.log(claims.subject, claims.scope);
 
-// Check permission
-const { can } = await auth.can({ action: 'read', resource: 'identity:users' });
+// Check permission — returns { granted, policies }
+const { granted } = await auth.can({ action: 'read', object: 'identity:users' });
 
 // Logout
 await auth.logout();
@@ -281,7 +280,8 @@ const apts = platform.auth.apts;
 // Create an APT
 const apt = await apts.create({
   name: 'my-bot',
-  scope: 'read:identity:users',
+  scopes: ['read:identity:users'],
+  subjects: ['bot@example.com'],
 });
 console.log(apt.token); // Store this — only shown once
 
@@ -440,7 +440,7 @@ users[0].props?.preferredLanguage; // typed
 | `platform.context` | `.configs`, `.settings` |
 | `platform.general` | `.activities`, `.artifacts`, `.comments`, `.events`, `.workflows` |
 | `platform.special` | `.files`, `.stats` |
-| `platform.touch` | `.emails`, `.notices`, `.pushes`, `.sms`, `.histories` |
+| `platform.touch` | `.emails`, `.notices`, `.pushes`, `.smss` |
 | `platform.content` | `.notes`, `.posts`, `.tickets` |
 | `platform.logistic` | `.locations`, `.drivers`, `.vehicles`, `.travels`, `.cargoes` |
 | `platform.conjoint` | `.accounts`, `.channels`, `.contacts`, `.members`, `.messages` |
