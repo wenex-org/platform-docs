@@ -64,22 +64,22 @@ At token issuance time the Platform reads the client's `coworkers[]` and embeds 
 
 When any document is **created**, the `OwnershipInterceptor` automatically injects all coworker client IDs from `token.coworker` into the document's `clients[]` field. The writing client does not need to manually list coworker IDs in the request body — sharing is automatic for all clients in the same Coworkers Space.
 
-The Platform's `publisher` worker then delivers the document to every client listed in `clients[]` via their registered CQRS webhook.
+The Platform's `dispatcher` worker then delivers the document to every client listed in `clients[]` via their registered CQRS webhook.
 
 ```mermaid
 sequenceDiagram
     participant CA as Client A
     participant GW as Platform Gateway
-    participant PUB as Publisher Worker
+    participant DISP as Dispatcher Worker
     participant CB as Client B Worker
 
     CA->>GW: POST /content/notes\n{ "title": "My note" }
     Note over GW: OwnershipInterceptor injects\nclients: [clientA_id, clientB_id]
     GW-->>CA: 201 { id: "doc1", clients: [...], ... }
-    GW-)PUB: Kafka event (doc1 created)
+    GW-)DISP: Kafka event (doc1 created)
 
-    PUB->>CA: POST /cqrs { event: "create", data: { id: "doc1", ... } }
-    PUB->>CB: POST /cqrs { event: "create", data: { id: "doc1", ... } }
+    DISP->>CA: POST /cqrs { id: "doc1", op: "c", after: { ... } }
+    DISP->>CB: POST /cqrs { id: "doc1", op: "c", after: { ... } }
 
     CA->>CA: store doc1 in Client A DB
     CB->>CB: store doc1 in Client B DB
@@ -93,12 +93,16 @@ sequenceDiagram
 
 ## Webhook Payload
 
-When the Platform's `publisher` worker delivers a CQRS event to your client's webhook endpoint, the payload contains the event type and the full document in its post-operation state:
+When the Platform's `dispatcher` worker delivers a CQRS event to your client's webhook endpoint, the payload is the MongoDB change record — the operation code plus the document's `after` / `before` state:
 
 ```json
 {
-  "event": "create",
-  "data": {
+  "id": "doc1",
+  "ts_ms": 1747303200000,
+  "op": "c",
+  "topic": "wnx-content.notes",
+  "source": { "name": "...", "db": "wnx-content", "collection": "notes" },
+  "after": {
     "id": "doc1",
     "title": "Shared spec",
     "owner": "user_id",
@@ -108,7 +112,7 @@ When the Platform's `publisher` worker delivers a CQRS event to your client's we
 }
 ```
 
-Event types mirror the CRUD lifecycle: `create`, `update`, `delete` (soft), `restore`, `destroy` (hard).
+The `op` field encodes the operation: `c` (create), `u` (update), `d` (delete), `r` (restore). `before` carries the prior state on updates/deletes and is absent on create; `after` is absent on delete.
 
 ## Reading Coworker Data
 
@@ -136,7 +140,7 @@ sequenceDiagram
     participant CA as Client A Backend
     participant GW as Platform Gateway
     participant DB as Platform MongoDB
-    participant PUB as Publisher Worker
+    participant DISP as Dispatcher Worker
     participant CB as Client B Worker
     participant CBD as Client B MongoDB
 
@@ -145,11 +149,11 @@ sequenceDiagram
     GW->>DB: insert document\n{ owner: user_id, clients: ["clientA_id","clientB_id"] }
     DB-->>GW: saved document
     GW-->>CA: 201 { data: { id: "...", ... } }
-    GW-)PUB: Kafka: entity.created
+    GW-)DISP: Kafka: entity.created
 
-    PUB->>PUB: lookup CQRS config\nfor clientA_id and clientB_id
-    PUB->>CA: POST /cqrs { event:"create", data:{...} }
-    PUB->>CB: POST /cqrs { event:"create", data:{...} }
+    DISP->>DISP: lookup CQRS config\nfor clientA_id and clientB_id
+    DISP->>CA: POST /cqrs { id, op:"c", after:{...} }
+    DISP->>CB: POST /cqrs { id, op:"c", after:{...} }
 
     CA->>CA: store in Client A DB
     CB->>CBD: store in Client B DB
@@ -170,6 +174,6 @@ The **Wenex Client** is the official first-party application built by the Wenex 
 | Joining a space | Add partner `client_id` to your own `domain/clients.coworkers[]` registration |
 | Sharing a document | Automatic — `OwnershipInterceptor` injects all coworker IDs into `clients[]` on every create |
 | Reading shared data | `?zone=client` — matches token's `cid` against document `clients[]` |
-| Delivery mechanism | Platform `publisher` worker → CQRS webhook POST |
+| Delivery mechanism | Platform `dispatcher` worker → CQRS webhook POST |
 
 See [ABAC](./access-control) for how `clients[]` is evaluated during reads, and [Core Schema](./core-schema) for the full set of document ownership fields.

@@ -32,11 +32,18 @@ The primary auth endpoint is not a CRUD collection. It exposes named operations:
 
 Long-lived API keys scoped to a set of OAuth scopes. Use for service-to-service authentication or CI/CD automation.
 
-### Required Create Fields
+### Create Fields
+
+Only `name` is required; the rest are optional. See [Authentication → APT fields reference](/api/authentication#apt-fields-reference) for the full list.
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `scopes` | ✅ | `string[]` | OAuth scopes this APT is authorized to use |
+| `name` | ✅ | `string` | Human-readable label (e.g. `ci-bot`) |
+| `scopes` | | `string[]` | OAuth scopes this APT is authorized to use |
+| `subjects` | | `string[]` | ABAC subjects for the token |
+| `strict` | | `boolean` | Require a valid `x-api-key` header (default `false`) |
+| `expires_at` | | `number` | Expiry as Unix milliseconds |
+| `coworkers` | | `string[]` | Additional coworker client IDs |
 
 ### Key Behaviors
 

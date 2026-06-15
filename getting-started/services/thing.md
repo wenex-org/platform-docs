@@ -78,9 +78,9 @@ A telemetry reading produced by a sensor.
 | --- | --- | --- |
 | `key` | string | Metric key identifier |
 | `state` | `State` | Reading state classification |
-| `device` | MongoId | Direct device reference for efficient filtering — **write-only in responses** |
+| `device` | MongoId | Direct device reference for efficient filtering — returned in responses and populatable |
 
-> `thing/metrics.device` is write-only in serializer responses. It will not appear in returned payloads even if provided on create. To get device context, populate `sensor` and resolve through it.
+> `thing/metrics.device` is included in serializer responses and can be populated directly (`populate: [{ path: "device" }]`), or you can populate `sensor` and resolve the device through it.
 
 ### Population
 

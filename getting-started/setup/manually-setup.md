@@ -86,7 +86,7 @@ npm run start:dev <project-name>
 | `auth` | Authentication, token issuance, APTs, OAuth grants, and ABAC policy evaluation |
 | `domain` | Tenant management, OAuth applications and client credentials |
 | `context` | Application configs and user settings; hosts the CQRS webhook registry |
-| `essential` | Distributed saga orchestration with PostgreSQL-backed compensating steps |
+| `essential` | Distributed saga orchestration with MongoDB-backed saga state and compensating steps |
 | `identity` | Users, profiles, and login sessions |
 | `financial` | Accounts, wallets, invoices, transactions, and currencies |
 | `career` | Businesses, branches, employees, products, services, stocks, stores, and customers |

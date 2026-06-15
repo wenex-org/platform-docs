@@ -11,11 +11,11 @@ The cleaner is the data retention worker. It runs continuous background loops to
 |---|---|---|---|
 | `AuditsModule` | Audit log records | PostgreSQL | `CLEANER_AUDIT_LOGS_TTL` |
 | `StatsModule` | Aggregated stat entries | MongoDB | `CLEANER_STATS_TTL` |
-| `SagasModule` | Completed saga stage records | PostgreSQL | `CLEANER_SAGAS_TTL` |
+| `SagasModule` | Completed saga stage records | MongoDB | `CLEANER_SAGA_STAGES_TTL` |
 | `MetricsModule` | IoT metric time-series | MongoDB | `CLEANER_METRICS_TTL` |
 | `StashesModule` | Dispatcher stash records | PostgreSQL | `CLEANER_STASH_LOGS_TTL` |
 
-All TTL values default to `100 days` if not set.
+Default retention if a TTL is unset: stats `10 years`, metrics `5 years`, audit logs `4 years`, saga stages `1 year`, stash records `100 days`.
 
 ## Purge Loop Pattern
 
@@ -38,8 +38,8 @@ A Redis key is set per record being purged to prevent duplicate deletions if the
 
 | Dependency | Usage |
 |---|---|
-| MongoDB | Purges expired `Stats` and `Metrics` records |
-| PostgreSQL | Purges expired `Audits`, `Sagas`, and `Stashes` |
+| MongoDB | Purges expired `Stats`, `Metrics`, and saga-stage (`essential/saga-stages`) records |
+| PostgreSQL | Purges expired `Audits` and `Stashes` |
 | Redis | Tracks in-progress purge state to prevent duplicate deletions |
 
 ## Key Files

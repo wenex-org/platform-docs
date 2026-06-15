@@ -48,7 +48,7 @@ graph TB
     subgraph Platform
         PGW["Platform Gateway :3010"]
         DB[(Platform MongoDB)]
-        PUB["Publisher Worker"]
+        PUB["Dispatcher Worker"]
     end
 
     CDB[(Client MongoDB)]
@@ -94,7 +94,7 @@ After every Platform write, the data flows back to the client:
 
 ```mermaid
 sequenceDiagram
-    participant PUB as Platform Publisher Worker
+    participant PUB as Platform Dispatcher Worker
     participant WRK as Client Workers :8050
     participant CDB as Client MongoDB
     participant NATS as NATS
@@ -236,7 +236,7 @@ customs/{group}/submodules/{collection}/
 
 **Port:** `8050`
 
-Receive CQRS webhook payloads from the Platform's `publisher` worker, upsert documents into the client's MongoDB, and emit NATS notifications so subscribing services can react.
+Receive CQRS webhook payloads from the Platform's `dispatcher` worker, upsert documents into the client's MongoDB, and emit NATS notifications so subscribing services can react.
 
 ```text
 apps/workers/src/
@@ -752,7 +752,7 @@ This maps to a Platform ABAC check: the authenticated user must have `read` perm
 
 ## CQRS Webhook Security
 
-The Platform publisher sends a plain HTTP POST to `/cqrs`. Secure it with a shared secret:
+The Platform dispatcher sends a plain HTTP POST to `/cqrs`. Secure it with a shared secret:
 
 ```bash
 # .env

@@ -214,18 +214,18 @@ The `zone` parameter is a query parameter (not part of the filter body) that app
 | `group` | Documents where authenticated user's domain/email matches `groups[]` |
 | `client` | Documents belonging to the OAuth `client_id` in the token |
 
-Zones can be combined with commas:
+Zones can be combined with commas. Note the combination is **not** a plain union: `own`/`share` are OR-ed together, while `group` and `client` are each AND-ed as additional constraints. See [Access Control → Zone Combination Logic](../getting-started/overview/key-concepts/access-control.md#zone-combination-logic) for the exact semantics.
 
 ```bash
 # My own documents
 curl "$BASE/identity/users?query={}&zone=own" \
   -H "Authorization: Bearer $TOKEN"
 
-# My own + shared with me
+# My own + shared with me  (own OR share)
 curl "$BASE/identity/users?query={}&zone=own,share" \
   -H "Authorization: Bearer $TOKEN"
 
-# All accessible zones
+# (own OR share) AND group AND client
 curl "$BASE/identity/users?query={}&zone=own,share,group,client" \
   -H "Authorization: Bearer $TOKEN"
 ```

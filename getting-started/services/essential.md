@@ -2,7 +2,7 @@
 
 **Port:** REST `:3050` · gRPC `:5050`
 
-Manages distributed saga transactions across multiple services. Sagas coordinate multi-step operations (e.g. a business creation that touches `logistic/locations`, `financial/accounts`, and `context/configs` atomically). Workers use PostgreSQL-backed saga stages for durability and crash recovery.
+Manages distributed saga transactions across multiple services. Sagas coordinate multi-step operations (e.g. a business creation that touches `logistic/locations`, `financial/accounts`, and `context/configs` atomically). Saga records and their per-step stages are stored in MongoDB; if a saga's TTL expires before it is committed, the `watcher` worker triggers compensation for crash recovery.
 
 ## Collections
 

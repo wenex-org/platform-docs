@@ -73,7 +73,7 @@ MongoDB is the primary data store for all 14 domain services. The platform requi
 
 ## PostgreSQL
 
-PostgreSQL is used exclusively by the `essential` service for durable, transactional saga state. It stores the compensating steps required to roll back distributed transactions safely.
+PostgreSQL is used by the worker layer for durable relational storage: the `logger` worker persists audit logs and the `dispatcher` worker stashes failed CQRS webhook deliveries for retry (the `cleaner` worker purges both on a TTL). Platform domain services — including saga state in the `essential` service — store their data in MongoDB, not PostgreSQL.
 
 | `.env` variable | `values.yaml` path | Default | Description |
 | --- | --- | --- | --- |
@@ -97,7 +97,7 @@ Elasticsearch stores aggregated logs shipped by the `logger` worker, full-text s
 
 ## Kafka
 
-Kafka is the event bus that carries CDC change events from MongoDB (via Debezium) to the worker layer. All workers — `dispatcher`, `observer`, `preserver`, `publisher`, `logger`, and `watcher` — consume topics under the `mongo.` prefix.
+Kafka is the event bus that carries CDC change events from MongoDB (via Debezium) to the worker layer. The Kafka-consuming workers — `dispatcher`, `observer`, `publisher`, `logger`, and `watcher` — consume topics under the `mongo.` prefix. (The `preserver` worker is an EMQX ExHook gRPC server and does not consume Kafka; the `cleaner` worker runs on a schedule rather than from Kafka.)
 
 | `.env` variable | `values.yaml` path | Default | Description |
 | --- | --- | --- | --- |

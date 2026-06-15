@@ -412,7 +412,7 @@ GraphQL reuses the same filter system as REST. The input types map to:
 | Input Type | Fields | Usage |
 |---|---|---|
 | `QueryFilterDto` | `query` | For `count` and `updateBulk` |
-| `FilterDto` | `query`, `populate`, `projection`, `pagination` | For `find` and `updateBulk` |
+| `FilterDto` | `query`, `populate`, `projection`, `pagination` | For `find` |
 | `FilterOneDto` | `query`, `populate`, `projection` | For single-entity operations |
 
 See [Filtering & Pagination](./filtering.md) for the complete field reference.

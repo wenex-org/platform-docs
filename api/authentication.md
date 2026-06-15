@@ -46,7 +46,7 @@ You need a `client_id` (OAuth application ID) — ask your admin if you don't ha
 
 ## POST /auth/token — Issue a token
 
-The only public endpoint in the platform. Exchanges credentials for a JWT access token (and optionally a refresh token).
+A public endpoint (`@IsPublic()`) — no `Authorization` header required. (The only other public route is the file download endpoint `GET /special/files/:id/download`.) Exchanges credentials for a JWT access token (and optionally a refresh token).
 
 ### Grant types
 
@@ -679,8 +679,8 @@ The `token` field is returned **only at creation**. It cannot be retrieved again
 | Field | Required | Type | Description |
 |---|:---:|---|---|
 | `name` | ✅ | `string` | Human-readable label (e.g., `"ci-bot"`, `"aws-lambda"`) |
-| `scopes` | ✅ | `Scope[]` | OAuth scopes this APT is allowed to use |
-| `subjects` | ✅ | `string[]` | ABAC subjects — same format as JWT `subject` field |
+| `scopes` | | `Scope[]` | OAuth scopes this APT is allowed to use |
+| `subjects` | | `string[]` | ABAC subjects — same format as JWT `subject` field |
 | `strict` | | `boolean` | If `true`, requests must also include a valid `x-api-key` header. Default: `false` |
 | `expires_at` | | `number` | Unix milliseconds when this APT expires. If omitted, uses server default |
 | `coworkers` | | `string[]` | Additional coworker client IDs to add to the APT's `clients[]` field |
