@@ -101,14 +101,16 @@ graph LR
 
 ## Metadata — The Auth Context Object
 
-Every service method receives a `Metadata` object extracted from the request headers and JWT payload. It propagates through every gRPC call:
+Every service method receives a `Metadata` object derived from the request headers and the JWT payload. It propagates through every gRPC call:
 
 | Field | Source | Purpose |
 | --- | --- | --- |
 | `token` | JWT payload | Decoded token claims |
-| `domain` | `x-domain` header or token | Tenant / domain scoping |
-| `client` | `x-client-id` header or token | OAuth client context |
-| `user` | token `sub` | Authenticated user ID |
+| `domain` | JWT `domain` claim | Tenant / domain scoping |
+| `client` | JWT `cid` / `client_id` claims | OAuth client context |
+| `user` | JWT `uid` (`uid ?? aid ?? cid`) | Authenticated user/app/client ID |
+
+> Tenant, client, and user context all come from the signed JWT — there is no `x-domain` or `x-client-id` request header. Tenancy and cross-client data sharing are governed by the token's `coworker` claim and each document's `clients[]` field; see [Coworkers Space](../key-concepts/coworkers-space) and [Access Control](../key-concepts/access-control).
 
 ## Special Wenex Client
 

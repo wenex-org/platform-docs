@@ -1189,7 +1189,6 @@ curl -X POST http://localhost:3010/auth/token \
 | `Authorization` | Yes* | `Bearer eyJ…` | JWT or APT. *Omit only on `@IsPublic()` routes |
 | `Content-Type` | POST / PATCH | `application/json` | Body encoding |
 | `x-api-key` | Conditional | `<encrypted>` | Required when `token.strict === true` |
-| `x-domain` | No | `my-tenant.com` | Override the tenant domain |
 | `x-request-id` | No | `uuid-v4` | Trace ID — auto-generated if absent |
 | `x-zone` | No | `own,share` | Ownership zone filter — default `own,share` |
 

@@ -388,27 +388,35 @@ await platform.identity.users.create(data, { brotli: true });
 
 ## Multi-Tenant Usage
 
-Pass the `x-domain` header to scope requests to a specific tenant:
+Tenancy is bound to the **token**, not to a request header — there is no `x-domain`
+override. A JWT is issued for a specific OAuth client (`cid`), and the client's
+`coworkers[]` registration is embedded as the token's `coworker` claim. The Platform
+auto-populates each document's `clients[]` field with the writer's `cid` plus every
+coworker ID, so data is shared across clients in the same Coworkers Space.
+
+To read documents shared by coworker clients, request the `client` zone — it matches
+the token's `cid` against each document's `clients[]`:
 
 ```typescript
-const tenantHttp = axios.create({
-  baseURL: 'http://localhost:3010',
-  headers: {
-    Authorization: `Bearer ${token}`,
-    'x-domain': 'tenant-a.example.com',
-  },
-});
-const tenantPlatform = Platform.build(tenantHttp);
-```
-
-Or override per-request:
-
-```typescript
-await platform.identity.users.find(
+// Documents owned by, or shared with, the token's client (coworker space)
+const shared = await platform.content.notes.find(
   { query: {} },
-  { headers: { 'x-domain': 'tenant-b.example.com' } },
+  { params: { zone: 'client' } },
+);
+
+// Broaden to include your own + shared + coworker documents
+const all = await platform.content.notes.find(
+  { query: {} },
+  { params: { zone: 'own,share,client' } },
 );
 ```
+
+To act as a different tenant, obtain a token issued for that client (via
+`platform.auth.auths.token(...)`) and build a `Platform` instance with it — the tenant
+scope follows from the token's claims, not from any per-request header.
+
+See [Coworkers Space](/getting-started/overview/key-concepts/coworkers-space) and
+[Access Control](/getting-started/overview/key-concepts/access-control) for the full model.
 
 ## TypeScript Tips
 
