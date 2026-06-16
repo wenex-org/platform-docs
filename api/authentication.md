@@ -1184,13 +1184,15 @@ curl -X POST http://localhost:3010/auth/token \
 
 ## Request headers reference
 
+The two headers that matter for authentication:
+
 | Header | Required | Example | Description |
 |---|---|---|---|
 | `Authorization` | Yes* | `Bearer eyJ…` | JWT or APT. *Omit only on `@IsPublic()` routes |
-| `Content-Type` | POST / PATCH | `application/json` | Body encoding |
 | `x-api-key` | Conditional | `<encrypted>` | Required when `token.strict === true` |
-| `x-request-id` | No | `uuid-v4` | Trace ID — auto-generated if absent |
-| `x-zone` | No | `own,share` | Ownership zone filter — default `own,share` |
+
+For the full, canonical list of every request header the gateway recognizes
+(zones, tracing, locale, sagas, stats, and more), see **[Request Headers](/api/headers)**.
 
 ## Error responses
 
