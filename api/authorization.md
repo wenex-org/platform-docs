@@ -392,23 +392,12 @@ After all security checks pass, `refineQuery()` injects the `id` path parameter 
 
 ## ABAC ownership model
 
-Every document carries four ownership fields:
-
-| Field | Type | Meaning |
-|---|---|---|
-| `owner` | ObjectId | Creator of the record (user/app/client) |
-| `shares` | ObjectId[] | Specific users granted explicit access |
-| `groups` | FQDN/AppId[] | Users/apps matching these identities get access |
-| `clients` | ObjectId[] | OAuth clients (and coworkers) with access |
-
-Zone conditions:
-
-| Zone | Condition |
-|---|---|
-| `own` | `owner == token.uid ?? token.aid ?? token.cid` |
-| `share` | `token.uid in shares[]` |
-| `group` | `token.aid or token.domain in groups[]` |
-| `client` | `token.cid in clients[]` |
+Read visibility is computed from four ownership fields on every document — `owner`,
+`shares`, `groups`, and `clients` — selected by the request's zone. The four fields,
+each zone's match condition, and how zones combine are defined once, canonically, in
+**[Access Control](/getting-started/overview/key-concepts/access-control)**. The grants
+described below layer action, field, filter, time, and location constraints on top of
+that base visibility.
 
 ## Authorization patterns
 
