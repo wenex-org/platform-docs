@@ -10,3 +10,4 @@ Complete reference for the Wenex Platform HTTP API — authentication, authoriza
 - [GraphQL Reference](./graphql-reference) — Schema overview, queries, mutations, and subscription support.
 - [Filtering & Pagination](./filtering) — Query filter syntax, operators, sorting, and cursor-based pagination.
 - [Streaming (SSE)](./streaming) — Server-Sent Events: subscribing to resource streams and handling reconnection.
+- [Realtime Data (MQTT)](./realtime) — Near-real-time change notifications over MQTT and MQTT-over-WebSocket: topics, message schema, the `mqtt` client, and EMQX authn/authz.
