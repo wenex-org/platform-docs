@@ -1,6 +1,6 @@
 # Services
 
-Wenex Platform consists of 14 domain microservices. All services are NestJS applications that expose a REST API and a gRPC server.
+Wenex Platform consists of 15 domain microservices. All services are NestJS applications that expose a REST API and a gRPC server.
 
 ## Architecture Summary
 
@@ -24,6 +24,7 @@ graph LR
         CON["conjoint<br/>:3130/:5130"]
         GEN["general<br/>:3070/:5070"]
         THG["thing<br/>:3150/:5150"]
+        EDU["education<br/>:3160/:5160"]
     end
 
     GW[Gateway :3010] --> Core Services
@@ -50,6 +51,7 @@ graph LR
 | [Conjoint](./conjoint) | 3130 | 5130 | Business |
 | [General](./general) | 3070 | 5070 | Business |
 | [Thing](./thing) | 3150 | 5150 | Business |
+| [Education](./education) | 3160 | 5160 | Business |
 
 ## Standard Service Internals
 
