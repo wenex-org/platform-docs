@@ -22,8 +22,11 @@ E-learning domain. A deliberately **thin** service: it owns only the two concept
 
 | Collection | Path | Purpose |
 | --- | --- | --- |
-| Courses | `/education/courses` | Course definition + embedded curriculum (chapters → lessons) |
-| Enrollments | `/education/enrollments` | Learner ↔ course link with progress and payment reference |
+| Courses | `/education/courses` | Course definition + embedded curriculum (chapters → lessons → assessment + quiz questions) |
+| Enrollments | `/education/enrollments` | Learner ↔ course link with progress, final grade, and payment reference |
+| Submissions | `/education/submissions` | Gradebook: per-attempt quiz/exercise/exam record with score, feedback, files |
+
+> **Grading model.** The course curriculum is the shared blueprint (same for every learner), so a graded lesson (`type` `QUIZ`/`EXERCISE`/`EXAM`) only carries its **definition** — an embedded `assessment` (max marks, pass mark, weight, due date, attempts, and `questions[]` for quizzes). A learner's actual grade is **per-(student, lesson, attempt)** and lives in `education/submissions`; a lightweight roll-up sits on `enrollment.lesson_progress[]` and `enrollment.final_grade`.
 
 ## `education/courses`
 
@@ -70,11 +73,25 @@ A sellable course, modeled on `career/services` (same pricing/rating shape) plus
 | Field | Type | Description |
 | --- | --- | --- |
 | `title` | string | Lesson title |
-| `type` | `LessonType` | `VIDEO`, `ARTICLE`, `QUIZ`, `LIVE` |
+| `type` | `LessonType` | `VIDEO`, `ARTICLE`, `QUIZ`, `EXERCISE`, `EXAM`, `LIVE` |
+| `order` | number | Display order |
+| `content` | string | Article body or external URL |
 | `topics` | string[] | Covered topics |
 | `is_preview` | boolean | Free preview lesson |
 | `video` | MongoId | `special/files` ID of the video |
 | `duration` | number | Length in seconds |
+| `assessment` | `Assessment` | Present for `QUIZ`/`EXERCISE`/`EXAM` lessons |
+
+### Embedded `Assessment` (on graded lessons)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `max` | number | Total marks |
+| `pass_mark` | number | Minimum passing marks |
+| `weight` | number | Contribution to `enrollment.final_grade` |
+| `attempts_allowed` | number | Max attempts |
+| `due_date` | Date | Deadline |
+| `questions` | `Question[]` | For `QUIZ`/`EXAM` — `text`, `type` (`MCQ`/`TRUE_FALSE`/`MULTI_SELECT`/`SHORT`/`ESSAY`), `options[]`, `answers[]`, `marks` |
 
 > File fields (`thumbnail`, `lessons[].video`) and `event` are raw MongoIds into `special/files` / `general/events` — resolve them with a separate read against those services.
 
@@ -106,6 +123,37 @@ A learner's enrollment in a course.
 | Path | Collection |
 | --- | --- |
 | `course` | `education/courses` |
+
+## `education/submissions`
+
+A single graded attempt by a learner for one graded lesson (quiz / exercise / exam). This is the gradebook — one document per attempt.
+
+### Required Create Fields
+
+| Field | Required | Type | Description |
+| --- | :---: | --- | --- |
+| `enrollment` | ✅ | MongoId | `education/enrollments` ID |
+| `course` | ✅ | MongoId | `education/courses` ID |
+| `lesson` | ✅ | string | Embedded course lesson `_id` |
+| `student` | ✅ | MongoId | `identity/users` ID (denormalized for reporting) |
+| `type` | ✅ | `SubmissionType` | `QUIZ`, `EXERCISE`, `EXAM` |
+| `status` | ✅ | `SubmissionStatus` | `DRAFT`, `SUBMITTED`, `GRADING`, `GRADED`, `RETURNED`, `LATE` |
+
+### Optional Fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `attempt` | number | Attempt number (default 1) |
+| `answers` | string[] | Quiz answers (aligned to `assessment.questions[]`) |
+| `content` | string | Free-text answer (exercise) |
+| `attachments` | MongoId[] | Submitted files — `special/files` IDs |
+| `score` / `max` / `percentage` | number | Result |
+| `passed` | boolean | Pass/fail |
+| `feedback` | string | Grader feedback |
+| `graded_by` | MongoId | `identity/users` ID of the grader |
+| `graded_at` / `submitted_at` | Date | Timestamps |
+
+> Quiz submissions can be auto-scored from `answers` vs the lesson's `assessment.questions[].answers`; exercise/exam submissions are graded manually (`feedback` + `graded_by`). Multiple attempts are separate submission documents.
 
 ## Query Tips
 
