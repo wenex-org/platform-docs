@@ -419,7 +419,7 @@ async afterCreate({ headers }: ServiceOptions): Promise<void> {
 }
 ```
 
-If the after-hook is never called (e.g., the request fails), the Platform's `watcher` worker triggers compensation after the saga TTL expires.
+If the after-hook is never called (e.g., the request fails), the Platform's essential service triggers compensation via its own `SagasProcessor` (BullMQ) after the saga TTL expires.
 
 ### BullMQ Jobs
 

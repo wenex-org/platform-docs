@@ -86,7 +86,7 @@ PostgreSQL is used by the worker layer for durable relational storage: the `logg
 
 ## Elasticsearch
 
-Elasticsearch stores aggregated logs shipped by the `logger` worker, full-text search indices for messages, posts, and products (maintained by `preserver`), and is also used by the APM stack.
+Elasticsearch stores the `db:index` full-text search indices for messages, posts, and products, and is also used by the APM stack.
 
 | `.env` variable | `values.yaml` path | Default | Description |
 | --- | --- | --- | --- |

@@ -2,7 +2,7 @@
 
 **Port:** REST `:3050` · gRPC `:5050`
 
-Manages distributed saga transactions across multiple services. Sagas coordinate multi-step operations (e.g. a business creation that touches `logistic/locations`, `financial/accounts`, and `context/configs` atomically). Saga records and their per-step stages are stored in MongoDB; if a saga's TTL expires before it is committed, the `watcher` worker triggers compensation for crash recovery.
+Manages distributed saga transactions across multiple services. Sagas coordinate multi-step operations (e.g. a business creation that touches `logistic/locations`, `financial/accounts`, and `context/configs` atomically). Saga records and their per-step stages are stored in MongoDB; if a saga's TTL expires before it is committed, the essential service's own `SagasProcessor` (BullMQ) triggers compensation for crash recovery.
 
 ## Collections
 
@@ -66,5 +66,5 @@ Records one step within a saga, including what was attempted and what came back.
 ## Key Behaviors
 
 - Sagas are typically backend-driven. Client code starts them using `start`, then the Platform's `watcher` worker handles timeout compensation automatically.
-- If a saga's TTL expires before it is committed, the `watcher` worker triggers compensation (rollback) of all recorded stages.
+- If a saga's TTL expires before it is committed, the essential service's own `SagasProcessor` (BullMQ) triggers compensation (rollback) of all recorded stages.
 - The primary cross-service consumer is `financial/transactions` — every transaction is saga-linked.

@@ -87,6 +87,7 @@ def main(**kwargs):
                 break
             df = pl.concat([df, batch(rows)])
 
+    condition += f" AND id <= {last_id}"  # high-water mark: do not race the Collector
     setting['latest_id'] = last_id
     return df
 ```

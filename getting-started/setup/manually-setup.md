@@ -109,9 +109,9 @@ npm run start:dev <project-name>
 | Project | Description |
 | --- | --- |
 | `dispatcher` | Receives Kafka events and dispatches BullMQ jobs to other workers |
-| `observer` | Triggers notifications and audit log entries on domain events |
-| `preserver` | Syncs documents to Elasticsearch and handles snapshot creation |
-| `watcher` | Monitors saga timeouts and triggers compensating transactions |
+| `observer` | Collects stats (`apps/workers/observer/src/modules/stats/`) on domain events |
+| `preserver` | An EMQX ExHook gRPC server (`apps/workers/preserver/src/modules/emqx/`) |
+| `watcher` | Mirrors platform collections per service (auth, career, conjoint, content, context, domain, identity) |
 | `publisher` | Delivers outbound messages via EMQX/MQTT, email, and SMS |
-| `logger` | Aggregates logs from all services and ships them to Elasticsearch |
+| `logger` | Aggregates logs from all services and persists them to PostgreSQL via TypeORM |
 | `cleaner` | Hard-deletes expired soft-deleted records on a scheduled basis |

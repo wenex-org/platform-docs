@@ -75,7 +75,7 @@ All collections use soft-delete by default. The `deleted_at` field controls docu
 
 Use `x-exclude-soft-delete-query: true` on read requests to include soft-deleted records.
 
-Five lifecycle operations control document state:
+Three lifecycle operations (six methods) control document state:
 
 | Operation | HTTP | Effect |
 | --- | --- | --- |

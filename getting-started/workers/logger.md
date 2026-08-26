@@ -23,7 +23,7 @@ The `Audit` entity (defined in `modules/audits/entities/audit.entity.ts`) stores
 
 ## Retention
 
-Expired audit records are purged by the [cleaner](./cleaner) worker based on the `CLEANER_AUDIT_LOGS_TTL` environment variable (defaults to 100 days).
+Expired audit records are purged by the [cleaner](./cleaner) worker based on the `CLEANER_AUDIT_LOGS_TTL` environment variable (defaults to 4 years).
 
 ## Key Files
 

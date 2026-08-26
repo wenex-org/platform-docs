@@ -221,7 +221,7 @@ In a Kubernetes cluster, port-forward the Airflow webserver:
 kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
 ```
 
-Then open `http://localhost:8080`. Default credentials for development deployments are set in the Airflow `values.yaml` (typically `admin` / `admin`).
+Then open `http://localhost:8080`. Default credentials for development deployments are set in the Airflow `values.yaml` (set them explicitly; never ship a default pair).
 
 From the UI you can:
 - **Trigger a DAG manually** with custom `conf` JSON to simulate a LakeFS event.

@@ -42,5 +42,5 @@ The main compose file runs MongoDB as a replica set. Add these entries to `/etc/
 Connection URL:
 
 ```text
-mongodb://root:password123@mongodb-primary:27017,mongodb-secondary:27018/?replicaSet=rs0&authSource=admin
+mongodb://root:<MONGO_PASS>@mongodb-primary:27017,mongodb-secondary:27018/?replicaSet=rs0&authSource=admin
 ```

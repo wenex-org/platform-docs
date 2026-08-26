@@ -101,7 +101,7 @@ A request must pass all three guards. Failure at any stage returns `401` or `403
 **AuthGuard** (`/libs/common/src/core/guards/auth.guard.ts`)
 
 - Extracts bearer token from `Authorization` header
-- Validates JWT signature (RS256) or resolves APT from Redis
+- Validates JWT signature (HS256) or resolves APT from Redis
 - Checks token expiration
 - Validates token against blacklist (for logout invalidation)
 - Stores validated token in `req.token` for downstream use

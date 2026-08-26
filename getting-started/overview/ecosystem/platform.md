@@ -48,7 +48,7 @@ A **Coworkers space** is not a Platform entity — it is the organizational conc
 
 2. **Metadata is pervasive.** Every gRPC call carries a `Metadata` object (user, client, domain, token). Ownership checks, soft-delete filtering, and audit logging derive from it automatically — services never receive raw HTTP context.
 
-3. **Consistent CRUD surface.** All 14 services expose the same uniform CRUD surface — 11 REST endpoints per collection backed by 16 gRPC methods (`count`, `create`, `createBulk`, `find`, `cursor`, `findOne`, `findById`, `updateOne`, `updateById`, `updateBulk`, `deleteOne`, `deleteById`, `restoreOne`, `restoreById`, `destroyOne`, `destroyById`). There are no service-specific exceptions. This uniformity means the SDK, the gateway pipeline, and the MCP tool server can be built once and applied uniformly.
+3. **Consistent CRUD surface.** All 14 services expose the same uniform CRUD surface — 11 REST endpoints per collection backed by 16 gRPC methods (`count`, `create`, `createBulk`, `find`, `cursor`, `findOne`, `findById`, `updateOne`, `updateById`, `updateBulk`, `deleteOne`, `deleteById`, `restoreOne`, `restoreById`, `destroyOne`, `destroyById`). The one exception is `auth`, which exposes named token operations rather than CRUD. This uniformity means the SDK, the gateway pipeline, and the MCP tool server can be built once and applied uniformly.
 
 4. **Three-layer authorization.** AuthGuard (token validity) → ScopeGuard (required scopes) → PolicyGuard (ABAC rules). A request must pass all three.
 

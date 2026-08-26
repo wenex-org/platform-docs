@@ -7,7 +7,7 @@ Wenex Platform supports two token types for API access.
 | **Lifetime** | Short, configurable | Long, revocable |
 | **Use case** | Interactive user sessions | Server-to-server, CI/CD, AI agents |
 | **Bearer prefix** | `eyJ…` | `APT-…` |
-| **Backed by** | Signed JWT (RS256) | Redis — key `auth:apt:<suffix>` |
+| **Backed by** | Signed JWT (HS256, symmetric `JWT_SECRET`) | Redis — key `auth:apt:<suffix>` |
 | **Strict support** | ✅ | ✅ |
 
 Both are submitted as `Authorization: Bearer <token>`. Routes decorated with `@IsPublic()` are the only exceptions — currently `POST /auth/token` and the public file endpoint `GET /special/files/:id/download`.
@@ -172,7 +172,7 @@ sequenceDiagram
     Client->>Token Endpoint: POST /auth/token<br/>(credentials + grant_type)
     Token Endpoint->>Auth Service: Validate credentials<br/>Create session
     Auth Service->>Token Endpoint: Session record created
-    Token Endpoint->>Crypto: Sign JWT with RS256
+    Token Endpoint->>Crypto: Sign JWT with HS256 (symmetric `JWT_SECRET`)
     Crypto->>Token Endpoint: Signed JWT
     Token Endpoint->>Client: access_token + refresh_token<br/>+ expires_in
 ```

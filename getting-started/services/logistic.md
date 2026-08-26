@@ -37,8 +37,8 @@ GeoJSON-based physical places or areas (warehouses, depots, customer sites, chec
 
 | Operation | HTTP | Scope | Description |
 | --- | --- | --- | --- |
-| Reverse geocode | `POST /logistic/locations/resolve/address` | `resolve:logistic:locations` | Coordinates → address |
-| Forward geocode | `POST /logistic/locations/resolve/geocode` | `resolve:logistic:locations` | Text query → coordinates |
+| Reverse geocode | `POST /logistic/locations/address-lookup` | `resolve:logistic:locations` | Coordinates → address |
+| Forward geocode | `POST /logistic/locations/geocode-lookup` | `resolve:logistic:locations` | Text query → coordinates |
 
 ## `logistic/drivers`
 
@@ -104,7 +104,7 @@ Ordered trip record linking route locations, cargoes, drivers, and vehicles.
 
 | Operation | HTTP | Scope | Description |
 | --- | --- | --- | --- |
-| Routing | `POST /logistic/travels/resolve/routing` | `resolve:logistic:travels` | Route planning via Valhalla |
+| Routing | `POST /logistic/travels/routing` | `resolve:logistic:travels` | Route planning via Valhalla |
 
 Routing requires `service` (`route`, `isochrone`, `sources_to_targets`, `optimized_route`) and `options` (raw Valhalla payload).
 

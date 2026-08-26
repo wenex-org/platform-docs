@@ -7,7 +7,7 @@ The MLOps system is deployed on Kubernetes using a Helm chart composed of three 
 The MLOps Helm chart is published in the official Wenex chart repository:
 
 ```bash
-helm repo add wenex https://vhidvz.github.io/charts
+helm repo add wenex https://wenex-org.github.io/charts
 helm repo update
 ```
 
@@ -102,7 +102,7 @@ All environment variables are set under `global.envs` in `values.yaml` and are i
 
 | Variable | Description |
 | --- | --- |
-| `MONGODB_URI` | Full MongoDB URI including auth and replica set (e.g. `mongodb://user:pass@host/?replicaSet=rs0&authSource=admin`) |
+| `MONGODB_URI` | Full MongoDB URI including auth and replica set (e.g. `mongodb://<POSTGRES_USER>:<POSTGRES_PASSWORD>@host/?replicaSet=rs0&authSource=admin`) |
 
 ## Example `values.yaml`
 
@@ -125,18 +125,18 @@ global:
       host: "postgres-cluster-rw.cnpg-system.svc.cluster.local"
       port: "5432"
       db: "lakefs"
-      user: "lakefs"
-      password: "lakefs"
+      user: <POSTGRES_USER>
+      password: <POSTGRES_PASSWORD>
     redis:
       host: "redis-stack-master.redis.svc.cluster.local"
       port: "6379"
-      password: ""
+      password: <POSTGRES_PASSWORD>
       prefix: "mlops"
     celery:
       broker: "redis://redis-stack-master.redis.svc.cluster.local:6379/0"
       backend: "redis://redis-stack-master.redis.svc.cluster.local:6379/0"
     mongodb:
-      uri: "mongodb://lakefs:lakefs@psmdb-server-psmdb-db-rs0.mongodb.svc.cluster.local/?replicaSet=rs0&authSource=admin"
+      uri: "mongodb://<POSTGRES_USER>:<POSTGRES_PASSWORD>@psmdb-server-psmdb-db-rs0.mongodb.svc.cluster.local/?replicaSet=rs0&authSource=admin"
 
 beat:
   enabled: true
