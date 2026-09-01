@@ -45,7 +45,7 @@ GraphQL operation names follow a predictable pattern:
 Pass the JWT in the `Authorization` HTTP header exactly as with REST:
 
 ```http
-Authorization: Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 In the Apollo Playground, use the **Headers** tab at the bottom.

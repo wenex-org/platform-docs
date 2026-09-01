@@ -65,6 +65,6 @@ Records one step within a saga, including what was attempted and what came back.
 
 ## Key Behaviors
 
-- Sagas are typically backend-driven. Client code starts them using `start`, then the Platform's `watcher` worker handles timeout compensation automatically.
+- Sagas are typically backend-driven. Client code starts them using `start`,.
 - If a saga's TTL expires before it is committed, the essential service's own `SagasProcessor` (BullMQ) triggers compensation (rollback) of all recorded stages.
 - The primary cross-service consumer is `financial/transactions` — every transaction is saga-linked.

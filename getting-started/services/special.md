@@ -54,7 +54,7 @@ Use raw `create` only when object-storage metadata already exists from a pre-sig
 | Operation | HTTP | Scope | Description |
 | --- | --- | --- | --- |
 | Share file | `POST /special/files/:id/share` | `share:special:files` | Generate a share link |
-| Download file | `GET /special/files/:id/download` | `download:special:files` | Stream file contents |
+| Download file | `GET /special/files/download/:id` (corrected 2026-09-02; `/:id/download` is the **public** share link) | `download:special:files` | Stream file contents |
 
 ## `special/stats`
 

@@ -374,7 +374,7 @@ The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or qu
 | `own` | `owner === token.uid` |
 | `share` | `shares[]` contains `token.uid` |
 | `group` | `groups[]` intersects user's group memberships |
-| `client` | `client_id === token.client_id` |
+| `client` | token's `cid` ∈ document `clients[]` (corrected 2026-09-02 — no `client_id` field exists; access-control.md owns this table) |
 
 Zones can be combined: `?zone=own,share`
 
@@ -867,7 +867,7 @@ curl http://localhost:3010/auth/verify -H "Authorization: Bearer $TOKEN" | jq .d
 ### List applicable grants
 
 ```bash
-curl "http://localhost:3010/auth/grants?subject=@user" \
+curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"@user"}' \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
@@ -891,8 +891,8 @@ curl "http://localhost:3010/content/notes/note-123" \
 ### Check grant field restrictions
 
 ```bash
-curl "http://localhost:3010/auth/grants?subject=@user" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.[] | {object, field}'
+curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"@user"}' \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.items[] | {object, field}'
 ```
 
 If `field` is set, only those fields are accessible — the grant itself tells you what's allowed.

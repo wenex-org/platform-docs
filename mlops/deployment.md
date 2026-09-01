@@ -7,14 +7,14 @@ The MLOps system is deployed on Kubernetes using a Helm chart composed of three 
 The MLOps Helm chart is published in the official Wenex chart repository:
 
 ```bash
-helm repo add wenex https://vhidvz.github.io/charts
+helm repo add wenex-mlops https://vhidvz.github.io/charts  # distinct alias 2026-09-02 — `wenex` is the org chart host
 helm repo update
 ```
 
 Verify the chart is available:
 
 ```bash
-helm search repo wenex/mlops
+helm search repo wenex-mlops/mlops
 ```
 
 ### Chart Structure
@@ -136,7 +136,7 @@ global:
       broker: "redis://redis-stack-master.redis.svc.cluster.local:6379/0"
       backend: "redis://redis-stack-master.redis.svc.cluster.local:6379/0"
     mongodb:
-      uri: "mongodb://lakefs:lakefs@psmdb-server-psmdb-db-rs0.mongodb.svc.cluster.local/?replicaSet=rs0&authSource=admin"
+      uri: "mongodb://lakefs:<LAKEFS_PASS>@psmdb-server-psmdb-db-rs0.mongodb.svc.cluster.local/?replicaSet=rs0&authSource=admin"
 
 beat:
   enabled: true
@@ -152,7 +152,7 @@ workers:
 Install or upgrade with your custom values:
 
 ```bash
-helm upgrade --install mlops wenex/mlops -f values.yaml
+helm upgrade --install mlops wenex-mlops/mlops -f values.yaml
 ```
 
 ## Scaling Workers
@@ -160,7 +160,7 @@ helm upgrade --install mlops wenex/mlops -f values.yaml
 Increase or decrease Worker replicas by setting `workers.replicaCount` in `values.yaml`, or via `--set` at install time:
 
 ```bash
-helm upgrade mlops wenex/mlops --set workers.replicaCount=6
+helm upgrade mlops wenex-mlops/mlops --set workers.replicaCount=6
 ```
 
 Workers are stateless — scaling up adds capacity immediately without any coordination required.

@@ -58,3 +58,5 @@ All resolved messages for a single change event are sent in one `publishMessageB
 |---|---|
 | `app.service.ts` | `publish()` — topic resolution and bulk EMQX publish |
 | `app.controller.ts` | `/status`, `/metrics` |
+
+> The authoritative topic list (nine forms, including `{client}/{group}` and the three identity-scoped ones) is [realtime.md](../../api/realtime.md) — this page's five-form list predates it (pointer added 2026-09-02).
