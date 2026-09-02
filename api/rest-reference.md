@@ -1,5 +1,7 @@
 # REST API Reference
 
+> Envelope corrected 2026-09-02: list replies are `{ items: [...] }` and counts `{ total: N }` (the platform's `Items`/`Total` serializers); the `{data, count}` shape some examples carried never shipped.
+
 The gateway exposes a uniform REST interface for all 14 domain services. Every collection shares the same 11-endpoint pattern. This document covers the pattern, all available collections, and curl examples using the `identity/users` collection.
 
 **Base URL:** `http://localhost:3010`
@@ -7,7 +9,7 @@ The gateway exposes a uniform REST interface for all 14 domain services. Every c
 All examples assume:
 
 ```bash
-export TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+export TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 export BASE="http://localhost:3010"
 ```
 
@@ -104,11 +106,11 @@ curl -X POST "$BASE/identity/users/bulk" \
 
 ```json
 {
-  "data": [
+  "items": [
     { "id": "64a1b2c3...", "username": "alice", ... },
     { "id": "64a1b2c4...", "username": "bob",   ... }
   ],
-  "count": 2
+  "total": 2
 }
 ```
 
@@ -144,11 +146,11 @@ curl "$BASE/identity/users?query={}&zone=own" \
 
 ```json
 {
-  "data": [
+  "items": [
     { "id": "64a1b2c3...", "username": "alice", ... },
     { "id": "64a1b2c4...", "username": "bob",   ... }
   ],
-  "count": 2
+  "total": 2
 }
 ```
 
@@ -396,7 +398,7 @@ All responses are wrapped in a consistent envelope:
 
 ```json
 {
-  "data": [ ...documents... ],
+  "items": [ ...documents... ],
   "count": 42
 }
 ```

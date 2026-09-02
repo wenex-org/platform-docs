@@ -132,9 +132,9 @@ workers:
 Add the Wenex chart repository and install:
 
 ```bash
-helm repo add wenex https://vhidvz.github.io/charts
+helm repo add wenex-mlops https://vhidvz.github.io/charts  # distinct alias 2026-09-02 — `wenex` is the org chart host
 helm repo update
-helm upgrade --install mlops wenex/mlops -f values.yaml
+helm upgrade --install mlops wenex-mlops/mlops -f values.yaml
 ```
 
 ## Step 4 — Verify

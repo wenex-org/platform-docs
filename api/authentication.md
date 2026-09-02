@@ -28,7 +28,7 @@ curl -X POST http://localhost:3010/auth/token \
   }'
 
 # 2. Use the access_token in every API call
-TOKEN="eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 curl http://localhost:3010/identity/users \
   -H "Authorization: Bearer $TOKEN"
 ```
@@ -126,7 +126,7 @@ curl -X POST http://localhost:3010/auth/token \
   -d '{
     "grant_type": "refresh_token",
     "client_id": "64a1b2c3d4e5f6a7b8c9d0e1",
-    "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }'
 ```
 
@@ -136,8 +136,8 @@ curl -X POST http://localhost:3010/auth/token \
 {
   "data": {
     "token_type": "Bearer",
-    "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
     "expires_in": 3600,
     "scope": "read:identity:users write:identity:users",
     "domain": "example.com",
@@ -473,7 +473,7 @@ const apiToken = {
 };
 
 const encrypted = AES.encrypt(JSON.stringify(apiToken), process.env.AES_SECRET);
-const apiKey = enc.Base64.stringify(encrypted);
+const apiKey = "<sample-redacted-2026-09-02>"; // illustrative only
 ```
 
 **Python:**
@@ -638,7 +638,7 @@ APTs are long-lived, revocable credentials stored in Redis and used for server-t
 | **Revocation** | Not revocable — must wait for expiry | Revocable immediately by deleting the APT |
 | **Use case** | Interactive user sessions, OAuth flows | Server-to-server, CI/CD bots, AI agents |
 | **Token format** | `eyJ...` (base64 JWT) | `APT-<base62-encoded-id>` |
-| **Refresh** | Requires new token request via `/auth/token` | APT tokens don't expire unless deleted |
+| **Refresh** | Requires new token request via `/auth/token` | APT tokens expire at `expires_at` (server default if omitted; corrected 2026-09-02) and are revocable by deletion |
 
 ### Create an APT
 
@@ -843,14 +843,12 @@ npm install @wenex/sdk
 ```
 
 ```typescript
-import { WenexClient } from '@wenex/sdk';
+import { Platform } from '@wenex/sdk'  // corrected 2026-09-02 — WenexClient never existed;
 
-const client = new WenexClient({
-  baseURL: 'http://localhost:3010',
-  clientId: 'your-app-id'
-});
+const client = Platform.build(axios.create({ baseURL, headers }));
 
-const { access_token } = await client.auth.login({
+const { access_token } = await platform.auth.auths.token(  // corrected 2026-09-02 — see streaming.md for the real bootstrap; login was never an SDK call
+  {
   username: 'user@example.com',
   password: 'password'
 });

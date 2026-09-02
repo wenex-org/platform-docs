@@ -7,7 +7,7 @@ Workers are internal background processes that consume Kafka events produced by 
 ```mermaid
 graph TD
     subgraph Services
-        SVC["microservices\n:3010–:3150"]
+        SVC["microservices\n:3020–:3150"]
     end
 
     subgraph Infrastructure

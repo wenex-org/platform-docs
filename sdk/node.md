@@ -99,7 +99,7 @@ const platform = Platform.build(axios.create({ baseURL: 'http://localhost:3010' 
 
 const { access_token } = await platform.auth.auths.token({
   username: 'admin@example.com',
-  password: 'Str0ng!Pass',
+  password: '<a-strong-password>',
   grant_type: 'password',
 });
 
@@ -158,7 +158,7 @@ class RestfulService<T extends Core, D extends Dto<Core>> {
 The `config` parameter is an extension of Axios `AxiosRequestConfig`:
 
 ```typescript
-interface RequestConfig<T> extends AxiosRequestConfig {
+// (corrected 2026-09-02) type RequestConfig<T extends object = Core> = Omit<AxiosRequestConfig, "params" | "headers"> & {
   params?: {
     zone?:  'own' | 'share' | 'group' | 'client' | string; // comma-separated
     skip?:  number;
@@ -192,7 +192,7 @@ const activeCount = await users.count({ status: 'active' });
 const newUser = await users.create({
   username: 'jdoe',
   email: 'jdoe@example.com',
-  password: 'Str0ng!Pass',
+  password: '<a-strong-password>',
   name: 'John Doe',
 });
 console.log(newUser.id);
@@ -323,7 +323,7 @@ The SDK exposes a `graphql` client for executing raw GraphQL operations:
 ```typescript
 const gql = platform.graphql;
 
-const result = await gql.query(`
+const result = await gql.request(`
   query {
     findIdentityUser(filter: { query: {} }) {
       count
@@ -333,7 +333,7 @@ const result = await gql.query(`
 `);
 
 // With variables
-const result2 = await gql.query(
+const result2 = await gql.request(
   `query FindById($id: String!) {
     findIdentityUserById(id: $id) { data { id username email } }
   }`,
@@ -361,15 +361,14 @@ const shared = await platform.identity.users.find(
 
 ## Full Response Mode
 
-By default the SDK unwraps the response envelope and returns the data directly. Set `fullResponse: true` to receive the raw Axios response:
+By default the SDK unwraps the response envelope and returns the data directly. Set `fullResponse: true` to receive the platform's own response envelope instead of the unwrapped payload (corrected 2026-09-02 — the Axios response object, headers included, is never surfaced; the SDK unwraps before the flag applies):
 
 ```typescript
 const response = await platform.identity.users.find(
   { query: {} },
   { fullResponse: true },
 );
-// response.data = { data: [...], count: N }
-// response.headers['etag'] = '"abc123"'
+// response = { items: [...] }   (a count() call yields { total: N })
 ```
 
 ## Brotli Compression
@@ -444,7 +443,7 @@ users[0].props?.preferredLanguage; // typed
 | `platform.financial` | `.accounts`, `.wallets`, `.invoices`, `.transactions`, `.currencies` |
 | `platform.career` | `.businesses`, `.branches`, `.employees`, `.products`, `.services`, `.stocks`, `.stores`, `.customers` |
 | `platform.domain` | `.apps`, `.clients` |
-| `platform.essential` | `.sagas`, `.sagaStages` |
+| `platform.essential` | `.sagas` (saga stages: `platform.essential.sagas.stages` — corrected 2026-09-02, `sagaStages` never existed) |
 | `platform.context` | `.configs`, `.settings` |
 | `platform.general` | `.activities`, `.artifacts`, `.comments`, `.events`, `.workflows` |
 | `platform.special` | `.files`, `.stats` |

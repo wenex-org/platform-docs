@@ -273,12 +273,7 @@ The `time` field enables temporal access control:
   subject: "@contractor",
   action: "read",
   object: "identity:users",
-  time: [
-    {
-      start: "2026-06-01T00:00:00Z",
-      end: "2026-08-31T23:59:59Z"
-    }
-  ]  // Only accessible during summer
+  time: [ { cron_exp: "0 0 9 * * 1-5", duration: 28800000 } ]  // corrected 2026-09-02 — GrantTime is {cron_exp, duration}, never {start, end}; authorization.md owns the shape  // Only accessible during summer
 }
 ```
 

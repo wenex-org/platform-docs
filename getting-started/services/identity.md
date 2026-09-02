@@ -89,5 +89,5 @@ Login/session record with origin and expiration metadata.
 ### Key Behaviors
 
 - Sessions are soft-deleted on logout.
-- The `cleaner` worker hard-deletes expired sessions.
+- (Corrected 2026-09-02: no worker purges sessions — the cleaner has no sessions module; logout soft-deletes and blacklists.)
 - Use `?zone=own,client` to list a user's own sessions.

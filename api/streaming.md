@@ -100,7 +100,7 @@ curl -N "$BASE/identity/users/cursor" \
 ## JavaScript / Browser Example
 
 ```javascript
-const token = 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...';
+const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 const filter = encodeURIComponent(JSON.stringify({}));
 
 const url = `http://localhost:3010/identity/users/cursor?query=${filter}`;
