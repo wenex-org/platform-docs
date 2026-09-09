@@ -84,9 +84,13 @@ surface:
 
 ### The `resource` enum
 
-`resource` is a string enum of `service/collection` values. Most CRUD collections across
-the 14 services are addressable; a few entries (e.g. `auth/apts`, `touch/push-histories`)
-are intentionally **not** exposed as MCP resources and return a "not implemented" error.
+`resource` is a string enum of `service/collection` values. Every CRUD collection across
+the 14 services is addressable — all 52 of them, `auth/apts` and `touch/push-histories`
+included.
+
+The one gap is `auth/apts`, which has no `update_one` / `update_bulk`: the gateway exposes
+no `PATCH` route for APTs, so those two calls fail. To change an APT, revoke it and create
+a replacement.
 
 ```jsonc
 // Example: find active identity users

@@ -48,7 +48,7 @@ The Platform manages `job`, `state`, and `session` automatically. This is the co
 
 Records one step within a saga, including what was attempted and what came back.
 
-> `essential/saga-stages` has **no MCP tools**. Stage data can only be read or written via platform REST.
+> `essential/saga-stages` is callable via the MCP shared CRUD tools, as well as over platform REST.
 
 ### Required Create Fields
 

@@ -14,7 +14,7 @@ Records and dispatches all outbound communications — email, in-app notices, we
 | Push Histories | `/touch/push-histories` | Push delivery attempt records |
 | SMSs | `/touch/smss` | Outbound SMS records |
 
-> `touch/push-histories` has **no MCP tools** — it is accessible via platform REST only.
+> `touch/push-histories` is written by the platform on push delivery. Read it over REST or with the MCP CRUD tools.
 
 ## `touch/emails`
 
@@ -95,7 +95,7 @@ POST /touch/pushes/send
 
 Delivery attempt records for push notifications.
 
-> No MCP tools — use platform REST to inspect push delivery history.
+> Written by the platform on delivery. Inspect it over REST or with the MCP CRUD tools; avoid creating entries by hand.
 
 ### Population
 

@@ -32,6 +32,8 @@ The primary auth endpoint is not a CRUD collection. It exposes named operations:
 
 Long-lived API keys scoped to a set of OAuth scopes. Use for service-to-service authentication or CI/CD automation.
 
+> Callable via the MCP shared CRUD tools except `update_one` / `update_bulk` — there is no `PATCH` route for APTs. To change an APT, revoke it and create a new one; its token value is shown only at creation.
+
 ### Create Fields
 
 Only `name` is required; the rest are optional. See [Authentication → APT fields reference](/api/authentication#apt-fields-reference) for the full list.
