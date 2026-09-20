@@ -4,10 +4,10 @@ The MLOps system is deployed on Kubernetes using a Helm chart composed of three 
 
 ## Helm Chart Repository
 
-The MLOps Helm chart is published in the official Wenex chart repository:
+The MLOps Helm chart is published in the maintainer's own chart repository (`vhidvz.github.io/charts`, which packages `airflow` and `mlops`) — not in the Wenex org host `wenex-org.github.io/charts` that the platform charts use, hence the distinct alias:
 
 ```bash
-helm repo add wenex-mlops https://vhidvz.github.io/charts  # distinct alias 2026-09-02 — `wenex` is the org chart host
+helm repo add wenex-mlops https://vhidvz.github.io/charts
 helm repo update
 ```
 
@@ -76,11 +76,11 @@ All environment variables are set under `global.envs` in `values.yaml` and are i
 
 | Variable | Description |
 | --- | --- |
-| `POSTGRES_HOST` | Hostname of the PostgreSQL server |
-| `POSTGRES_DB` | Database name (default: `lakefs`) |
-| `POSTGRES_USER` | Database user |
-| `POSTGRES_PASSWORD` | Database password |
-| `POSTGRES_PORT` | Port (default: `5432`) |
+| `PG_HOST` | Hostname of the PostgreSQL server |
+| `PG_DB` | Database name (default: `lakefs`) |
+| `PG_USER` | Database user |
+| `PG_PASSWORD` | Database password |
+| `PG_PORT` | Port (default: `5432`) |
 
 ### Redis
 
@@ -102,7 +102,7 @@ All environment variables are set under `global.envs` in `values.yaml` and are i
 
 | Variable | Description |
 | --- | --- |
-| `MONGODB_URI` | Full MongoDB URI including auth and replica set (e.g. `mongodb://user:pass@host/?replicaSet=rs0&authSource=admin`) |
+| `MONGO_URI` | Full MongoDB URI including auth and replica set (e.g. `mongodb://user:pass@host/?replicaSet=rs0&authSource=admin`) |
 
 ## Example `values.yaml`
 

@@ -13,17 +13,10 @@ The publisher delivers real-time MQTT notifications to connected clients. On eve
 
 ## Topic Resolution
 
-For a document with `owner`, `shares[]`, and `clients[]` in database `db` with `id` and `collection`:
-
-```
-{owner}/{db}/{id}/{collection}
-{share}/{db}/{id}/{collection}           (for each share)
-{client}/{db}/{id}/{collection}          (for each client)
-{client}/{owner}/{db}/{id}/{collection}  (cross-scoped: client + owner)
-{client}/{share}/{db}/{id}/{collection}  (cross-scoped: client + share, for each share)
-```
-
-Duplicate topics are deduplicated before publishing.
+For a document with `owner`, `shares[]`, `groups[]` and `clients[]` in database `db` with `id` and
+`collection`, `publish()` derives one topic per ownership attribute and per cross-scoped pair —
+nine forms in all, listed once in [realtime.md → Topics and Schemas](../../api/realtime.md#topics-and-schemas). Duplicate topics
+are deduplicated before publishing.
 
 ## Message Format
 
@@ -59,4 +52,3 @@ All resolved messages for a single change event are sent in one `publishMessageB
 | `app.service.ts` | `publish()` — topic resolution and bulk EMQX publish |
 | `app.controller.ts` | `/status`, `/metrics` |
 
-> The authoritative topic list (nine forms, including `{client}/{group}` and the three identity-scoped ones) is [realtime.md](../../api/realtime.md) — this page's five-form list predates it (pointer added 2026-09-02).

@@ -36,7 +36,7 @@ sequenceDiagram
 
 | Group | Stages | Purpose |
 | --- | --- | --- |
-| **HTTP headers** | XRequestId, XPoweredBy, ETag, NamingConventionReq | Add trace ID, response headers, HTTP caching, convert snake_case → camelCase on input |
+| **HTTP headers** | XRequestId, XPoweredBy, ETag, NamingConventionReq | Add trace ID, response headers, HTTP caching; when `x-naming-convention` names another convention, convert the request body **to snake_case** (the platform's own) |
 | **Security** | AuthGuard, ScopeGuard, PolicyGuard | Validate JWT/APT, check required scopes, evaluate ABAC policy |
 | **Rate & cache** | Cache, RateLimit | Return cached response if fresh; enforce per-collection request limits |
 | **Context & data** | Metadata, Sentry, Authority, Field, Validation, Ownership, ValidationPipe | Extract auth context, instrument errors, apply zone/ownership filter, strip disallowed fields, validate DTO shape, enforce ownership rules |
@@ -48,7 +48,7 @@ sequenceDiagram
 | Serializer | Transform entity → response shape, hide secret fields, apply projection |
 | AuditLog | Record write operations for the audit trail |
 | Filter | Apply post-query field filtering |
-| NamingConventionRes | Convert camelCase → snake_case on output |
+| NamingConventionRes | Convert the snake_case reply **to the convention the request asked for** (`x-naming-convention: camelCase`); unchanged otherwise |
 | NoApiResponse | Suppress NestJS default wrapper when not needed |
 
 ## Gateway Internals

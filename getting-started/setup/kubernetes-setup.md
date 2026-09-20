@@ -41,8 +41,7 @@ auth:
   enabled: true
 identity:
   enabled: true
-gateway:
-  enabled: true
 ```
 
-The full list of available keys mirrors the service and worker names: `auth`, `domain`, `context`, `essential`, `identity`, `financial`, `career`, `special`, `touch`, `content`, `logistic`, `conjoint`, `general`, `thing`, `watcher`, `observer`, `preserver`, `dispatcher`, `publisher`, `logger`, `cleaner`.
+The gateway is **not** a subchart: the parent chart's own `templates/deployment.yaml` deploys it
+whenever the chart is installed, so there is no `gateway.enabled` key. The full list of subchart keys mirrors the service and worker names: `auth`, `domain`, `context`, `essential`, `identity`, `financial`, `career`, `special`, `touch`, `content`, `logistic`, `conjoint`, `general`, `thing`, `watcher`, `observer`, `preserver`, `dispatcher`, `publisher`, `logger`, `cleaner`.

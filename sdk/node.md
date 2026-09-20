@@ -1,6 +1,6 @@
 # Node SDK — `@wenex/sdk`
 
-The `@wenex/sdk` package is the official TypeScript/JavaScript client for the Wenex Platform. It wraps the REST API with typed methods, handles Brotli compression, and exposes RxJS-compatible patterns.
+The `@wenex/sdk` package is the official TypeScript/JavaScript client for the Wenex Platform. It wraps the REST and GraphQL APIs with typed methods, supports streaming via SSE, Brotli compression of query strings, and multi-tenant usage.
 
 **npm:** [`@wenex/sdk`](https://www.npmjs.com/package/@wenex/sdk)
 **Repository:** [wenex-org/platform-sdk](https://github.com/wenex-org/platform-sdk)
@@ -13,10 +13,12 @@ npm install @wenex/sdk axios
 pnpm add @wenex/sdk axios
 ```
 
-Optional: Brotli compression support (reduces network payload):
+Brotli compression of the query string (`config.brotli`) works out of the box — the encoder is a
+bundled dependency (`@piercefreeman/brotli-compress`). The optional `brotli-wasm` peer is needed only
+for the exported `Brotli` helper, which decodes/encodes payloads for your own use:
 
 ```bash
-npm install @wenex/sdk axios brotli-wasm
+npm install @wenex/sdk axios            # brotli-wasm only if you call the `Brotli` helper directly
 ```
 
 ## Quick Start
@@ -98,9 +100,10 @@ const platform = Platform.build(http);
 const platform = Platform.build(axios.create({ baseURL: 'http://localhost:3010' }));
 
 const { access_token } = await platform.auth.auths.token({
+  grant_type: GrantType.password,   // import { GrantType } from '@wenex/sdk/common/core/enums'
+  client_id: CLIENT_ID,             // required on every grant type
   username: 'admin@example.com',
   password: '<a-strong-password>',
-  grant_type: 'password',
 });
 
 // Re-build with the token
@@ -158,7 +161,7 @@ class RestfulService<T extends Core, D extends Dto<Core>> {
 The `config` parameter is an extension of Axios `AxiosRequestConfig`:
 
 ```typescript
-// (corrected 2026-09-02) type RequestConfig<T extends object = Core> = Omit<AxiosRequestConfig, "params" | "headers"> & {
+// type RequestConfig<T extends object = Core> = Omit<AxiosRequestConfig, "params" | "headers"> & {
   params?: {
     zone?:  'own' | 'share' | 'group' | 'client' | string; // comma-separated
     skip?:  number;
@@ -256,9 +259,10 @@ const auth = platform.auth.auths;
 
 // Get token
 const { access_token } = await auth.token({
+  grant_type: GrantType.password,
+  client_id: CLIENT_ID,             // required — `AuthenticationRequest.client_id` is not optional
   username: 'admin@example.com',
   password: 'secret',
-  grant_type: 'password',
 });
 
 // Verify token
@@ -280,7 +284,7 @@ const apts = platform.auth.apts;
 // Create an APT
 const apt = await apts.create({
   name: 'my-bot',
-  scopes: ['read:identity:users'],
+  scopes: [Scope.ReadIdentityUsers],   // `Scope` enum from '@wenex/sdk/common/core' — the string 'read:identity:users' is its value
   subjects: ['bot@example.com'],
 });
 console.log(apt.token); // Store this — only shown once
@@ -323,22 +327,26 @@ The SDK exposes a `graphql` client for executing raw GraphQL operations:
 ```typescript
 const gql = platform.graphql;
 
-const result = await gql.request(`
-  query {
-    findIdentityUser(filter: { query: {} }) {
-      count
-      data { id username email }
+// request({ query | mutation, variables }, config?) — the operation rides an object, not a bare string
+const result = await gql.request<{ findIdentityUser: { items: { id: string; username: string; email: string }[] } }>({
+  query: `
+    query {
+      findIdentityUser(filter: { query: {} }) {
+        items { id username email }
+      }
     }
-  }
-`);
+  `,
+});
 
 // With variables
-const result2 = await gql.request(
-  `query FindById($id: String!) {
+const result2 = await gql.request({
+  query: `query FindById($id: String!) {
     findIdentityUserById(id: $id) { data { id username email } }
   }`,
-  { id: '64a1b2c3d4e5f6a7b8c9d0e1' },
-);
+  variables: { id: '64a1b2c3d4e5f6a7b8c9d0e1' },
+});
+
+// A reply carrying `errors` is thrown (as the errors array); otherwise `data` is returned unwrapped.
 ```
 
 ## Zone Filtering
@@ -361,7 +369,7 @@ const shared = await platform.identity.users.find(
 
 ## Full Response Mode
 
-By default the SDK unwraps the response envelope and returns the data directly. Set `fullResponse: true` to receive the platform's own response envelope instead of the unwrapped payload (corrected 2026-09-02 — the Axios response object, headers included, is never surfaced; the SDK unwraps before the flag applies):
+By default the SDK unwraps the response envelope and returns the data directly. Set `fullResponse: true` to receive the platform's own response envelope instead of the unwrapped payload (the Axios response object, headers included, is never surfaced):
 
 ```typescript
 const response = await platform.identity.users.find(
@@ -373,17 +381,22 @@ const response = await platform.identity.users.find(
 
 ## Brotli Compression
 
-Enable Brotli to compress request bodies (requires `brotli-wasm` peer dependency):
+`config.brotli` compresses the **query string** — the `filter`/`query`/`pagination` params a read
+sends — into one base64url `q=` parameter (`getParams` in `axios.util.ts`, via the bundled
+`@piercefreeman/brotli-compress`). Request bodies are sent as-is; `brotli-wasm` is not involved:
 
 ```typescript
-await platform.identity.users.create(
-  { username: 'alice', email: 'alice@example.com' },
-  { brotli: { quality: 6 } }, // quality 1–11
+await platform.identity.users.find(
+  { query: { status: 'active' }, pagination: { limit: 50 } },
+  { brotli: { quality: 6 } }, // quality 1–11; default 8
 );
 
-// Boolean shorthand (uses default quality)
-await platform.identity.users.create(data, { brotli: true });
+// Boolean shorthand (uses the default quality)
+await platform.identity.users.find(filter, { brotli: true });
 ```
+
+The gateway decodes `q=` transparently; the compressed form is what lets a long `$in` filter fit in
+a URL.
 
 ## Multi-Tenant Usage
 
@@ -443,7 +456,7 @@ users[0].props?.preferredLanguage; // typed
 | `platform.financial` | `.accounts`, `.wallets`, `.invoices`, `.transactions`, `.currencies` |
 | `platform.career` | `.businesses`, `.branches`, `.employees`, `.products`, `.services`, `.stocks`, `.stores`, `.customers` |
 | `platform.domain` | `.apps`, `.clients` |
-| `platform.essential` | `.sagas` (saga stages: `platform.essential.sagas.stages` — corrected 2026-09-02, `sagaStages` never existed) |
+| `platform.essential` | `.sagas` (saga stages: `platform.essential.sagas.stages`) |
 | `platform.context` | `.configs`, `.settings` |
 | `platform.general` | `.activities`, `.artifacts`, `.comments`, `.events`, `.workflows` |
 | `platform.special` | `.files`, `.stats` |

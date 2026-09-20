@@ -73,8 +73,7 @@ Variables:
 ```graphql
 query FindUsers($filter: FilterDto!) {
   findIdentityUser(filter: $filter) {
-    count
-    data {
+    items {
       id
       username
       email
@@ -126,7 +125,7 @@ Variables:
 ### Create One
 
 ```graphql
-mutation CreateUser($data: CreateUserDto!) {
+mutation CreateUser($data: CreateIdentityUserDto!) {
   createIdentityUser(data: $data) {
     data {
       id
@@ -154,10 +153,9 @@ Variables:
 ### Create Bulk
 
 ```graphql
-mutation CreateUsersBulk($data: CreateUserItemsDto!) {
+mutation CreateUsersBulk($data: CreateIdentityUserItemsDto!) {
   createIdentityUserBulk(data: $data) {
-    count
-    data {
+    items {
       id
       username
     }
@@ -181,7 +179,7 @@ Variables:
 ### Update by ID
 
 ```graphql
-mutation UpdateUser($id: String!, $data: UpdateUserDto!, $ref: String) {
+mutation UpdateUser($id: String!, $data: UpdateIdentityUserDto!, $ref: String) {
   updateIdentityUserById(id: $id, data: $data, ref: $ref) {
     data {
       id
@@ -205,7 +203,7 @@ Variables:
 ### Update Bulk
 
 ```graphql
-mutation UpdateUsersBulk($filter: QueryFilterDto!, $data: UpdateUserDto!) {
+mutation UpdateUsersBulk($filter: QueryFilterDto!, $data: UpdateIdentityUserDto!) {
   updateIdentityUserBulk(filter: $filter, data: $data) {
     total
   }
@@ -268,7 +266,7 @@ curl -X POST http://localhost:3010/graphql \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "query { findIdentityUser(filter: { query: {} }) { count data { id username email } } }"
+    "query": "query { findIdentityUser(filter: { query: {} }) { items { id username email } } }"
   }'
 ```
 
@@ -288,7 +286,7 @@ curl -X POST http://localhost:3010/graphql \
 
 ### Auth Service
 
-> Note: The `/auth` controller does not follow the standard CRUD pattern and has no resolver.
+> The `/auth` controller does not follow the CRUD pattern, but it **does** have a resolver: four mutations — `token(data: AuthAuthenticationDto)`, `verify`, `logout` and `can(data: AuthAuthorizationDto)` — plus the CRUD resolvers of `auth/apts` and `auth/grants`.
 
 ### Identity Service
 
@@ -424,7 +422,7 @@ GraphQL returns typed serializers. The shape mirrors the REST response envelope:
 | Return type | Shape |
 |---|---|
 | `TotalSerializer` | `{ total: Int }` |
-| `UserDataSerializer` | `{ data: User }` |
-| `UserItemsSerializer` | `{ data: [User], count: Int }` |
+| `IdentityUserDataSerializer` | `{ data: IdentityUserSerializer }` |
+| `IdentityUserItemsSerializer` | `{ items: [IdentityUserSerializer], meta }` — `meta` optional and unset by the base handlers; no `count` |
 
 All entity types include the [common platform fields](./rest-reference.md#common-fields-on-every-document).

@@ -48,7 +48,7 @@ scripts:
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `name` | string | yes | — | Unique identifier for the script. Also used as the Celery task ID prefix (via MD5 hash) and the Redis key suffix. |
+| `name` | string | yes | — | Unique identifier for the script. Its MD5 hash is the **whole** Celery task ID (`task_id=script_hash`) and the Redis key suffix (`script:<md5>`). |
 | `source` | string | yes | — | The PostgreSQL archive table to read from, in `<db>.<collection>` format (e.g. `auth.grants`). This matches the Kafka CDC topic source. |
 | `repository_id` | string | yes | — | LakeFS repository name. Created automatically with `storage_namespace` if it does not exist. |
 | `storage_namespace` | string | yes | — | LakeFS storage backend for the repository. Use `s3://bucket/path` for S3-compatible stores or `local://name` for local development. |
@@ -64,7 +64,7 @@ scripts:
 The config loader enforces:
 - All `name` values must be unique within the file.
 - `scripts/<name>/__main__.py` must exist for every entry.
-- Interval strings must be parseable by the `timelength` library (e.g. `30 days`, `4 hours`, `1 week`).
+- Interval strings must match `INTERVAL_PATTERN` — `^(\d+)\s*(d|day|days|w|week|weeks|m|month|months)$` — so `30 days`, `2 weeks` and `1 month` validate and `4 hours` is rejected.
 
 ## The `main()` Function
 
@@ -77,7 +77,7 @@ import polars as pl
 
 def main(**kwargs) -> pl.DataFrame:
     conn    = kwargs['conn']     # psycopg2 connection to PostgreSQL
-    redis   = kwargs['redis']   # redis.StrictRedis instance
+    redis   = kwargs['redis']   # PrefixedRedis — a redis.Redis subclass that prefixes every key with REDIS_PREFIX
     config  = kwargs['config']  # full parsed config.yaml dict
     script  = kwargs['script']  # this script's config block dict
     lakefs  = kwargs['lakefs']  # LakeFS context dict (see below)
@@ -92,7 +92,7 @@ def main(**kwargs) -> pl.DataFrame:
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `conn` | `psycopg2.connection` | Open PostgreSQL connection. Use it to query the archive table `script['source']`. |
-| `redis` | `redis.StrictRedis` | Redis client. Use it for custom per-script state beyond what `setting` provides. |
+| `redis` | `PrefixedRedis` (`redis.Redis` subclass) | Redis client; every key is transparently prefixed with `REDIS_PREFIX`. Use it for custom per-script state beyond what `setting` provides. |
 | `config` | `dict` | The full `config.yaml` parsed into a Python dict. Useful if a script needs to reference other scripts' config. |
 | `script` | `dict` | This script's config block. Key fields: `name`, `source`, `batch_size`, `condition`, `branch`, `delta_table`, `repository_id`. |
 | `lakefs` | `dict` | LakeFS context: `{'client': Client, 'repository': Repository, 'storage_options': dict}`. The `Repository` object provides branch and tag operations; `storage_options` is passed to `DeltaTable` for direct Delta Lake access. |
@@ -205,4 +205,4 @@ scripts/
     └── trigger_airflow_on_tag.yaml       # LakeFS webhook action
 ```
 
-Each script must live in its own subdirectory named exactly after `name` in `config.yaml`. Additional helper modules can be placed in the same directory — `sys.path` includes the script directory during execution.
+Each script must live in its own subdirectory named exactly after `name` in `config.yaml`. Additional helper modules can be placed in the same directory — `sys.path` includes the script directory **only while `__main__.py` is imported** (it is popped in a `finally` before `main()` runs), so import helpers at module top level, not lazily inside `main()`.

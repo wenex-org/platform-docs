@@ -1,6 +1,6 @@
 # Workers
 
-Workers are internal background processes that consume Kafka events produced by the platform's microservices. They have no public REST API — each exposes only `GET /status` (health check) and `GET /metrics` (Prometheus).
+Workers are internal background processes that consume Kafka events produced by the platform's microservices. They have no public REST API — each exposes `GET /status` (health check) and `GET /metrics` (Prometheus); the dispatcher additionally serves its BullMQ dashboard at `/bullmq` and Swagger at `/api`.
 
 ## Overview
 

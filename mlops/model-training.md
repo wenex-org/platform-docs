@@ -26,8 +26,7 @@ The full example is at `example/train.py` in the MLOps repository. The training 
 Install the required Python packages:
 
 ```bash
-pip install deltalake pyarrow torch torchvision mlflow \
-            scikit-learn polars joblib matplotlib python-dotenv
+pip install -r example/requirements.txt   # the pinned set: torch, mlflow, deltalake, pyarrow, polars, numpy, scikit-learn, …
 ```
 
 Set the following environment variables (or create a `.env` file):
@@ -254,12 +253,12 @@ with mlflow.start_run(run_name="lakefs_delta_mlp"):
 
 ## Generating Synthetic Data for Testing
 
-The `example/datagen.py` script generates a synthetic dataset that matches the expected schema (numeric + categorical columns with a `label` column). Use it to test the training pipeline locally before connecting to a real LakeFS table:
+The `example/datagen.py` script generates a synthetic dataset that matches the expected schema (numeric + categorical columns with a `label` column) and writes it **into LakeFS** through the same `LAKEFS_*` variables `train.py` reads — a running LakeFS is required, there is no local-file mode:
 
 ```bash
 cd example/
-python datagen.py          # writes synthetic data to a local Delta Lake table
+python datagen.py          # writes synthetic data to the LakeFS Delta table named by LAKEFS_STORAGE_*
 python train.py            # trains on it with MLflow tracking
 ```
 
-See the `example/docker-compose.yml` for a local LakeFS + MLflow stack to run the full example without Kubernetes.
+Bring the stacks up with `example/docker/docker-compose.lkfs.yml` (LakeFS) and `example/docker/docker-compose.mlf.yml` (MLflow); `example/docker-compose.yml` runs only the `mlops-example` container itself.

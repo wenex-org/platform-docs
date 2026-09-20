@@ -70,10 +70,10 @@ data: {"statusCode":500,"message":"Internal server error"}
 curl -N "$BASE/identity/users/cursor" \
   --get \
   --data-urlencode 'query={}' \
-  --data-urlencode 'pagination={"limit":100,"sort":{"created_at":-1}}' \
   -H "Authorization: Bearer $TOKEN" \
   -H "Accept: text/event-stream"
 ```
+
 
 The `-N` flag disables curl's output buffering, which is required to see SSE events in real time.
 

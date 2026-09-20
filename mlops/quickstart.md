@@ -17,7 +17,7 @@ Open `scripts/config.yaml` and add an entry under `scripts:`.
 
 ```yaml
 scripts:
-  - name: my-grants             # unique name; becomes the Celery task ID prefix
+  - name: my-grants             # unique name; its MD5 hash is the Celery task ID and the Redis key suffix
     branch: main                # LakeFS branch to write to
     delta_table: grants         # Delta Lake table name inside the repository
     repository_id: my-repo      # LakeFS repository (created automatically if absent)
@@ -40,55 +40,23 @@ mkdir -p scripts/my-grants
 touch scripts/my-grants/__main__.py
 ```
 
-Add a `main()` function. The simplest possible script that flattens each archived document into a row:
+Add a `main()` function. Its contract — the keyword arguments it receives, the `pl.DataFrame` it
+returns, the `id <= last_id` guard that keeps a batch from racing new writes, and the
+`setting['latest_id']` it must record — is documented once, in
+[Scripts → The `main()` function](./scripts#the-main-function), with the full reference
+implementation. The skeleton is:
 
 ```python
 import polars as pl
 
-
-def batch(rows: list) -> pl.DataFrame:
-    columns = ['id', 'oid', 'after', 'before']
-    column_data = dict(zip(columns, zip(*rows)))
-    column_data.pop('id')
-    column_data['id'] = column_data.pop('oid')
-    return pl.DataFrame(column_data)
-
-
-def main(**kwargs):
-    conn = kwargs['conn']
-    script = kwargs['script']
-    setting = kwargs['setting']
-
-    latest_id = setting.get('latest_id', 0)
-
-    with conn.cursor() as cur:
-        condition = f"WHERE id > {latest_id}"
-        if 'condition' in script:
-            condition = f"WHERE {script['condition']} AND id > {latest_id}"
-
-        cur.execute(f"""
-            SELECT MAX(id), COUNT(*)
-            FROM "{script['source']}" {condition};
-        """)
-        last_id, total_count = cur.fetchone()
-
-        if total_count == 0:
-            return pl.DataFrame()
-
-        cur.execute(f"""
-            SELECT * FROM "{script['source']}" {condition}
-            ORDER BY id ASC LIMIT 10000;
-        """)
-
-        df = pl.DataFrame()
-        while True:
-            rows = cur.fetchmany(script['batch_size'])
-            if not rows:
-                break
-            df = pl.concat([df, batch(rows)])
-
-    setting['latest_id'] = last_id
-    return df
+def main(**kwargs) -> pl.DataFrame:
+    conn, setting = kwargs['conn'], kwargs['setting']   # the full kwarg list is in Scripts → Signature
+    # 1. read the rows past setting['latest_id'] from PostgreSQL (`conn`), bounded by
+    #    the MAX(id) taken at the start of the batch
+    # 2. flatten each archived document into a row of a polars DataFrame
+    # 3. record setting['latest_id'] = the last id you consumed
+    # 4. return the DataFrame — the runner writes it to the LakeFS Delta table
+    ...
 ```
 
 See [Scripts](./scripts) for the full `main()` parameter reference and how the LakeFS lifecycle works.
@@ -132,18 +100,18 @@ workers:
 Add the Wenex chart repository and install:
 
 ```bash
-helm repo add wenex-mlops https://vhidvz.github.io/charts  # distinct alias 2026-09-02 — `wenex` is the org chart host
+helm repo add wenex-mlops https://vhidvz.github.io/charts  # the maintainer's chart host; `wenex` is the org host for the platform charts
 helm repo update
 helm upgrade --install mlops wenex-mlops/mlops -f values.yaml
 ```
 
 ## Step 4 — Verify
 
-**Check Flower** — Open the Flower UI at `http://<flower-pod>:5555`. Within 5 minutes of your first MongoDB write, you should see a `script_runner` task appear with status `SUCCESS`.
+**Check Flower** — Open the Flower UI at `http://<flower-pod>:5555`. Within 5 minutes of the **`batch_size`-th** unprocessed row (100 in the config above — `db_check` queues a task only once at least `batch_size` rows sit past the last processed id; set `batch_size: 1` to see the first write), you should see a `script_runner` task appear with status `SUCCESS`.
 
 **Check LakeFS** — Open the LakeFS UI and navigate to your repository. You should see new commits on the `main` branch and a Delta Lake table (`grants/` directory) in the file browser.
 
-**Check PostgreSQL** — The archive table `auth.grants` will exist with rows. After the Worker processes them, `db_clean` (runs every 4 hours) will purge consumed rows.
+**Check PostgreSQL** — The archive table `auth.grants` will exist with rows. After the Worker processes them, `db_clean` (runs every 4 hours) purges rows up to the smallest `latest_id` any consumer of that table has recorded.
 
 ## What happens next
 

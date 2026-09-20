@@ -66,7 +66,7 @@ MongoDB is the primary data store for all 14 domain services. The platform requi
 | --- | --- | --- | --- |
 | `MONGO_HOST` | `global.environments.mongo.host` | `psmdb-server-psmdb-db-rs0.mongodb.svc.cluster.local` | Comma-separated list of `host:port` pairs for the replica set members. |
 | `MONGO_DB` | `global.environments.mongo.db` | `wenex` | Name of the primary MongoDB database. |
-| `MONGO_PREFIX` | `global.environments.mongo.prefix` | `wnx` | Prefix applied to all collection names, enabling isolation in a shared database. |
+| `MONGO_PREFIX` | `global.environments.mongo.prefix` | `wnx` | Prefix of every **database** name — each app writes to `${MONGO_PREFIX}-${app}` (`wnx-identity`, `wnx-financial`, …; `DB_NAME()` in `libs/common/src/core/app.ts`), so several deployments can share one cluster. Collection names are not prefixed. |
 | `MONGO_USER` | `global.environments.mongo.user` | `databaseAdmin` | MongoDB username with read/write access to the target database. |
 | `MONGO_PASS` | `global.environments.mongo.pass` | | MongoDB password. |
 | `MONGO_QUERY` | `global.environments.mongo.query` | `replicaSet=rs0&loadBalanced=true&authSource=admin` | Additional query string parameters appended to the MongoDB connection URI. |

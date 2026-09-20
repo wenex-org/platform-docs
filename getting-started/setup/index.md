@@ -13,4 +13,4 @@ Quick-start guide for running the Wenex platform.
 
 ## Prerequisites
 
-See [Prerequisites](./prerequisites) (deduplicated 2026-09-02 — this section was a byte copy).
+See [Prerequisites](./prerequisites).

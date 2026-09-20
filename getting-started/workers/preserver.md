@@ -53,5 +53,5 @@ The preserver uses `AuthProviderModule` to verify tokens and check ABAC policies
 | `modules/emqx/emqx.controller.ts` | `@GrpcService` — all ExHook gRPC method handlers |
 | `modules/emqx/emqx.service.ts` | Business logic for each hook event |
 | `modules/emqx/interfaces/` | TypeScript interfaces for all ExHook request/response types |
-| `modules/emqx/enums/` | `AuthorizeReqType`, `ResponseType` enums |
+| `modules/emqx/enums/` | `AuthorizeReqType`, `ResponsedType` enums (the second is spelled with a `d` in `response-type.enum.ts`) |
 | `app.proto` | ExHook gRPC service definition |

@@ -95,8 +95,10 @@ graph LR
 
     KF --> DISP["Dispatcher Worker"]
     KF --> OBS["Observer Worker"]
-    KF --> PRES["Preserver Worker"]
     KF --> WATCH["Watcher Worker"]
+    KF --> PUB["Publisher Worker"]
+    KF --> LOG["Logger Worker"]
+    %% Preserver is gRPC-only (EMQX exhook), not a Kafka consumer
 ```
 
 ## Metadata — The Auth Context Object
