@@ -61,7 +61,7 @@ OAuth permission grants define what actions a subject (user or role) may perform
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `action` | ✅ | `Action` enum | `read`, `write`, `manage`, or a custom action |
+| `action` | ✅ | `Action` enum | `create`, `read`, `update`, `delete`, `restore`, `destroy`, a special action, or `any` |
 | `subject` | ✅ | string | Subject identifier — `{username}@{domain}` (e.g. `guest@example.com`) |
 | `object` | ✅ | `Resource` | Resource identifier (e.g. `identity:users` or `identity:*`) |
 

@@ -7,7 +7,7 @@ Wenex Platform supports two token types for API access.
 | **Lifetime** | Short, configurable | Long, revocable |
 | **Use case** | Interactive user sessions | Server-to-server, CI/CD, AI agents |
 | **Bearer prefix** | `eyJ…` | `APT-…` |
-| **Backed by** | Signed JWT (HS256, symmetric `JWT_SECRET`) | Redis — key `auth:apt:<suffix>` |
+| **Backed by** | Signed JWT (HS256, symmetric `JWT_SECRET`) | Redis — key `apt:<suffix>` |
 | **Strict support** | ✅ | ✅ |
 
 Both are submitted as `Authorization: Bearer <token>`. Routes decorated with `@IsPublic()` are the only exceptions — currently `POST /auth/token` and the public file endpoint `GET /special/files/:id/download`.
@@ -161,9 +161,9 @@ curl -X POST http://localhost:3010/auth/token \
 
 | Status | Message | Cause |
 |---|---|---|
-| `401 Unauthorized` | `"username or password is invalid"` | Wrong credentials |
+| `401 Unauthorized` | `"username or password is not correct"` | Wrong credentials |
 | `400 Bad Request` | `"client_id is required"` | Missing required field |
-| `429 Too Many Requests` | `"too many failed login attempts from this IP"` | Rate limit exceeded |
+| `429 Too Many Requests` | `"too many request rate limit exceeded"` | `RateLimitInterceptor` — 100 requests per 1 s per session by default (`RATE_LIMIT_LIM`/`RATE_LIMIT_TTL`), not a failed-login counter |
 
 ### Token flow diagram
 
@@ -227,7 +227,7 @@ curl http://localhost:3010/auth/verify \
 | `coworker` | `string?` | Space-separated coworker client IDs |
 
 ::: info APT tokens
-When the Bearer value starts with `APT-`, `verify` resolves the APT from Redis (`auth:apt:<suffix>`), decrypts it with AES, and returns the same `JwtToken` shape. The caller sees no difference.
+When the Bearer value starts with `APT-`, `verify` resolves the APT from Redis (`apt:<suffix>`), decrypts it with AES, and returns the same `JwtToken` shape. The caller sees no difference.
 
 ```bash
 curl http://localhost:3010/auth/verify \
@@ -237,7 +237,7 @@ curl http://localhost:3010/auth/verify \
 
 ## GET /auth/logout — Invalidate the session
 
-Deletes the session record associated with the current token. The blacklist worker then adds the `session` ID to Redis, causing subsequent requests using that token to be rejected by `AuthGuard`.
+Deletes the session record associated with the current token. The identity service's `SessionsService.onAfterChange` hook then writes the `session` id to the Redis blacklist (`blacklist:auth:<session>`, TTL = the session's remaining lifetime) — no worker is involved — and every later request carrying that token is refused by `BlacklistService.verifyToken` with `403 "blacklisted"`.
 
 Works identically for JWT and APT bearer tokens.
 
@@ -260,7 +260,7 @@ sequenceDiagram
     Logout Endpoint->>Auth Service: Extract session ID<br/>from token
     Auth Service->>MongoDB: Delete session record<br/>from identity.sessions
     MongoDB->>Auth Service: Deleted
-    Auth Service->>Redis: Blacklist session ID<br/>(key: auth:blacklist:session-id)
+    Auth Service->>Redis: Blacklist session ID<br/>(key: blacklist:auth:session-id, via SessionsService.onAfterChange)
     Redis->>Auth Service: OK
     Auth Service->>Logout Endpoint: Session deleted
     Logout Endpoint->>Client: { "result": "OK" }
@@ -269,7 +269,7 @@ sequenceDiagram
 After logout:
 1. The session is deleted from the database
 2. The session ID is added to a Redis blacklist
-3. Any subsequent request with that token is rejected by `AuthGuard` with `401 Unauthorized`
+3. Any subsequent request with that token is rejected with `403 Forbidden` — `"blacklisted"`
 4. Both JWT and APT tokens using that session are invalidated
 
 ::: tip Already logged out
@@ -444,7 +444,7 @@ x-api-key: base64(AES-encrypt(JSON(ApiToken)))
 type ApiToken = {
   cid: string;             // must match token.cid
   client_id: string;       // must match token.client_id
-  whitelist?: string[];    // optional IP allowlist — caller IP must be included
+  whitelist?: string[];    // optional IP allowlist — exact addresses; the caller IP must be one of them
   expiration_date: Date;   // must be in the future
 };
 ```
@@ -453,7 +453,7 @@ type ApiToken = {
 |---|---|
 | `cid` | Client/App ID — must match the JWT's `cid` field exactly |
 | `client_id` | OAuth client identifier — must match the JWT's `client_id` field |
-| `whitelist` | (Optional) Array of CIDR-notation IPs. Empty array = no restriction |
+| `whitelist` | (Optional) Array of **exact** IP addresses — `AuthShield.check` tests `whitelist.includes(ip)`, so a CIDR range never matches. Empty array = no restriction |
 | `expiration_date` | Absolute date when this API key expires |
 
 #### Generating an API key
@@ -469,11 +469,11 @@ const apiToken = {
   cid: jwt.cid,
   client_id: jwt.client_id,
   expiration_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-  whitelist: ['192.168.1.0/24', '10.0.0.0/8']  // optional
+  whitelist: ['192.168.1.20', '10.0.0.5']  // optional — exact addresses, not ranges
 };
 
 const encrypted = AES.encrypt(JSON.stringify(apiToken), process.env.AES_SECRET);
-const apiKey = "<sample-redacted-2026-09-02>"; // illustrative only
+const apiKey = "<encrypted-ApiToken>"; // the base64 of the ciphertext — illustrative only
 ```
 
 **Python:**
@@ -554,14 +554,14 @@ response = requests.get('http://localhost:3010/identity/users', headers=headers)
 // No restriction — any IP allowed
 { cid: "...", client_id: "...", expiration_date: "2027-06-01", whitelist: [] }
 
-// CIDR whitelist
+// Exact-address whitelist (no CIDR — the check is a list membership test)
 {
   cid: "...", client_id: "...", expiration_date: "2027-06-01",
-  whitelist: ["192.168.1.0/24", "10.0.0.0/8", "203.0.113.42"]
+  whitelist: ["192.168.1.20", "10.0.0.5", "203.0.113.42"]
 }
 ```
 
-Requests from outside the whitelist receive `403 Forbidden` with `"message": "ip whitelist validation failed"`.
+Requests from an address not in the whitelist receive `403 Forbidden` with `"message": "invalid ip"`.
 
 #### Header placement
 
@@ -574,15 +574,16 @@ x-api-key: <encrypted-ApiToken>
 
 ### Validation sequence (`AuthShield.check`)
 
-1. Extract `x-api-key` header from request.
-2. Base64-decode and AES-decrypt the value.
-3. Parse as `ApiToken` — throw `403 Forbidden` if malformed.
-4. Assert `cid` matches `token.cid`.
-5. Assert `client_id` matches `token.client_id`.
-6. Assert `expiration_date` is in the future.
-7. If `whitelist` is non-empty: extract caller IP and check against CIDR ranges.
-8. Assert `token.type === "access"` — refresh tokens cannot be used for API calls.
-9. All checks passed — allow request to proceed ✅
+1. If an `x-api-key` header is present — **strict or not** — base64-decode and AES-decrypt it;
+   parse as `ApiToken`, `403 "api-key is not valid"` if it does not decrypt or carries no `cid`.
+2. Assert `cid` matches `token.cid` — `403 "cid is not valid"`.
+3. Assert `expiration_date` is in the future — `403 "expiration"`.
+4. Assert `client_id` matches `token.client_id` — `403 "client_id is not valid"`.
+5. If `token.strict`: a decrypted key is required — `403 "strict token must have valid api-key"`;
+   and if its `whitelist` is non-empty the caller IP must be **in the list** (exact match) —
+   `403 "invalid ip"`.
+6. Assert `token.type === "access"` — refresh tokens cannot be used for API calls.
+7. All checks passed — allow request to proceed ✅
 
 ### Error handling
 
@@ -590,9 +591,10 @@ x-api-key: <encrypted-ApiToken>
 |---|---|---|
 | Missing `x-api-key` (strict token) | `"strict token must have valid api-key"` | Add `x-api-key` header to every request |
 | Invalid/malformed key | `"api-key is not valid"` | Check AES encryption and base64 encoding |
-| Expired key | `"api-key is not valid"` | Regenerate key with future `expiration_date` |
-| `cid` mismatch | `"api-key is not valid"` | Ensure `ApiToken.cid` matches the JWT's `cid` |
-| IP not whitelisted | `"invalid ip"` | Add your IP to `whitelist` or remove whitelisting |
+| Expired key | `"expiration"` | Regenerate key with future `expiration_date` |
+| `cid` mismatch | `"cid is not valid"` | Ensure `ApiToken.cid` matches the JWT's `cid` |
+| `client_id` mismatch | `"client_id is not valid"` | Ensure `ApiToken.client_id` matches the JWT's `client_id` |
+| IP not whitelisted | `"invalid ip"` | Add your exact IP to `whitelist` or remove whitelisting |
 
 ### Behaviour matrix
 
@@ -603,7 +605,9 @@ x-api-key: <encrypted-ApiToken>
 | Expired API key | `true` | ✅ expired | **403 Forbidden** |
 | Wrong `cid` in API token | `true` | ❌ mismatch | **403 Forbidden** |
 | IP not in whitelist | `true` | ✅ wrong IP | **403 Forbidden** |
-| Non-strict token | `false` | any (ignored) | **Allowed** |
+| Non-strict token, no header | `false` | ❌ missing | **Allowed** |
+| Non-strict token, valid key | `false` | ✅ | **Allowed** |
+| Non-strict token, bad key | `false` | ❌ malformed / mismatched / expired | **403 Forbidden** — a supplied key is always validated |
 
 ### Regular vs strict token comparison
 
@@ -633,12 +637,12 @@ APTs are long-lived, revocable credentials stored in Redis and used for server-t
 
 | Aspect | JWT | APT |
 |---|---|---|
-| **Storage** | Signed, stateless (no server-side storage) | Redis cache: `auth:apt:<suffix>` |
+| **Storage** | Signed, stateless (no server-side storage) | Redis cache: `apt:<suffix>` |
 | **Lifetime** | Short-lived (typically 1 hour) | Long-lived, configurable per token |
-| **Revocation** | Not revocable — must wait for expiry | Revocable immediately by deleting the APT |
+| **Revocation** | Revocable — deleting the session (`/auth/logout`, or `DELETE identity/sessions/:id`) blacklists it until it would have expired | Revocable immediately by deleting the APT |
 | **Use case** | Interactive user sessions, OAuth flows | Server-to-server, CI/CD bots, AI agents |
 | **Token format** | `eyJ...` (base64 JWT) | `APT-<base62-encoded-id>` |
-| **Refresh** | Requires new token request via `/auth/token` | APT tokens expire at `expires_at` (server default if omitted; corrected 2026-09-02) and are revocable by deletion |
+| **Refresh** | Requires new token request via `/auth/token` | APT tokens expire at `expires_at` (server default if omitted) and are revocable by deletion |
 
 ### Create an APT
 
@@ -701,7 +705,7 @@ The platform recognizes the `APT-` prefix, resolves it from Redis, and processes
 When a request arrives with `Authorization: Bearer APT-...`:
 
 1. Extract suffix from the token (`APT-<suffix>`)
-2. Query Redis at key `auth:apt:<suffix>`
+2. Query Redis at key `apt:<suffix>`
 3. If found: decrypt the APT record with AES
 4. Convert to JWT claims via the `aptToken()` utility
 5. Proceed as if it were a JWT — same scope checking, ABAC authorization, etc.
@@ -766,11 +770,13 @@ Checks whether the current token has permission to perform a specific action on 
 
 ```typescript
 {
-  action: Action;            // required — e.g., "read", "write", "manage"
+  action: Action;            // required — an `Action`: "create", "read", "update", "delete", "restore", "destroy", a special action or "any"
   object: Resource;          // required — e.g., "content:notes", "identity:users"
-  fields?: string[];         // optional — specific fields to check access for
-  filter?: Record<...>;      // optional — query filter context
+  subjects?: string[];       // optional — override the token's subjects
+  strict?: string;           // optional — "obj": exact object match, no wildcard fallback
+  tz?: string; ip?: string; time?: Date;   // optional — evaluate time/location grants as if from here/then
 }
+// (`AuthorizationDto` — there is no `fields`/`filter` input; field access is read off the returned policies)
 ```
 
 ### Examples
@@ -790,7 +796,7 @@ curl -X POST http://localhost:3010/auth/can \
 {
   "data": {
     "granted": true,
-    "policies": [{ "subject": "admin", "action": "read", "object": "identity:users", "field": null, "filter": null }]
+    "policies": [{ "subject": "admin@example.com", "action": "read", "object": "identity:users", "field": null, "filter": null }]
   }
 }
 ```
@@ -801,21 +807,23 @@ curl -X POST http://localhost:3010/auth/can \
 curl -X POST http://localhost:3010/auth/can \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "action": "write", "object": "identity:users", "fields": ["name", "email", "phone", "password"] }'
+  -d '{ "action": "update", "object": "identity:users" }'
 ```
 
-**Response — some fields denied:**
+**Response — granted, with a field allowlist on the matching policy:**
 
 ```json
 {
   "data": {
-    "granted": false,
-    "denied_fields": ["password"],
-    "allowed_fields": ["name", "email", "phone"],
-    "policies": [{ "subject": "user", "action": "write", "object": "identity:users", "field": ["name", "email", "phone"] }]
+    "granted": true,
+    "policies": [{ "subject": "user@example.com", "action": "update", "object": "identity:users", "field": ["name", "email", "phone"] }]
   }
 }
 ```
+
+The reply carries `granted` and the matching `policies` only; whether `password` may be written is
+read from the policy's `field` list — `/auth/can` does not take a `fields` input and returns no
+`denied_fields`/`allowed_fields`.
 
 ### Pre-flight UI checks
 
@@ -823,7 +831,7 @@ curl -X POST http://localhost:3010/auth/can \
 const canDelete = await fetch('/auth/can', {
   method: 'POST',
   headers: { 'Authorization': `Bearer ${token}` },
-  body: JSON.stringify({ action: 'manage', object: 'content:notes' })
+  body: JSON.stringify({ action: 'delete', object: 'content:notes' })
 })
 .then(r => r.json())
 .then(r => r.data.granted);
@@ -836,25 +844,30 @@ else hideDeleteButton();
 
 ### SDK (@wenex/sdk)
 
-The official SDK handles token storage and auto-refresh automatically.
+The SDK is a typed client over an `axios` instance you own: it neither stores tokens nor refreshes
+them — put the bearer on the instance and replace it yourself when it expires.
 
 ```bash
 npm install @wenex/sdk
 ```
 
 ```typescript
-import { Platform } from '@wenex/sdk'  // corrected 2026-09-02 — WenexClient never existed;
+import axios from 'axios';
+import { Platform } from '@wenex/sdk';
+import { GrantType } from '@wenex/sdk/common/core/enums';
 
-const client = Platform.build(axios.create({ baseURL, headers }));
+const http = axios.create({ baseURL: 'http://localhost:3010' });
+const platform = Platform.build(http);
 
-const { access_token } = await platform.auth.auths.token(  // corrected 2026-09-02 — see streaming.md for the real bootstrap; login was never an SDK call
-  {
+const { access_token } = await platform.auth.auths.token({
+  grant_type: GrantType.password,
+  client_id: CLIENT_ID,
   username: 'user@example.com',
-  password: 'password'
+  password: 'password',
 });
+http.defaults.headers.common.Authorization = `Bearer ${access_token}`;
 
-// SDK refreshes tokens automatically when they expire
-const users = await client.identity.users.find();
+const users = await platform.identity.users.find();
 ```
 
 ### JavaScript / TypeScript
@@ -1151,14 +1164,15 @@ const TOKEN = "eyJ...";
 # Inspect token claims and check expiration
 curl http://localhost:3010/auth/verify -H "Authorization: Bearer $TOKEN"
 
-# Refresh if expired
+# Refresh if expired (client_id is required on every grant type)
 curl -X POST http://localhost:3010/auth/token \
-  -d '{ "grant_type": "refresh_token", "refresh_token": "..." }'
+  -H "Content-Type: application/json" \
+  -d '{ "grant_type": "refresh_token", "refresh_token": "...", "client_id": "..." }'
 ```
 
-### 401 Unauthorized: Session blacklisted
+### 403 Forbidden: Session blacklisted
 
-**Cause:** Token's session was deleted (logged out). **Fix:** Get a new token via `/auth/token`.
+**Cause:** Token's session was deleted (logged out) — the reply is `403` with `"message": "blacklisted"`, from `BlacklistService.verifyToken`. **Fix:** Get a new token via `/auth/token`.
 
 ### 403 Forbidden: Insufficient scope
 
@@ -1178,7 +1192,7 @@ curl -X POST http://localhost:3010/auth/token \
 
 ### 429 Too Many Requests: Rate limited
 
-**Cause:** Too many failed login attempts. **Fix:** Wait 15 minutes, verify your credentials.
+**Cause:** `RateLimitInterceptor` counted more than its limit in one window — 100 requests per second per session by default (`RATE_LIMIT_LIM`, `RATE_LIMIT_TTL`); it is not a failed-login counter. **Fix:** back off for a second and retry.
 
 ## Request headers reference
 

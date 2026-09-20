@@ -111,7 +111,7 @@ A request must pass all three guards. Failure at any stage returns `401` or `403
 
 - Retrieves required scope from endpoint `@SetScope()` decorator
 - Validates `req.token.scope` contains the required scope or a higher-privilege scope
-- Handles scope elevation: `read` can be satisfied by `write` or `manage`
+- Handles scope elevation: a `read:` scope is satisfied by a `write:` or `manage:` token scope (OAuth scope verbs — distinct from grant `Action`s)
 - Supports prefix matching: `read:identity` matches `read:identity:users`
 - On failure: `403 Forbidden` ("insufficient scope")
 
@@ -196,8 +196,8 @@ Grants are the foundation of ABAC authorization. A grant defines: **who** (`subj
 
 ```typescript
 interface Grant {
-  subject: string;        // Role or identity (e.g., "admin", "user@domain.com", "app-id")
-  action: Action;         // read, write, manage, or custom (e.g., "publish", "archive")
+  subject: string;        // <local>@<domain>[:scope] — a role word, uid, aid or cid as the local part
+  action: Action;         // create | read | update | delete | restore | destroy | a special action | any
   object: Resource;       // Service and resource (e.g., "content:notes", "identity:users")
   
   field?: string[];       // Allowed fields — if omitted, all fields are allowed
@@ -213,11 +213,16 @@ Subjects in grants can be:
 
 | Type | Format | Example | Meaning |
 |---|---|---|---|
-| **Role** | `@role-name` | `@admin`, `@editor` | Anyone assigned this role |
-| **User ID** | `uid@domain` | `user-123@example.com` | Specific user at domain |
-| **App ID** | `aid@domain` | `my-app@example.com` | Specific app at domain |
-| **Client ID** | `cid@domain` | `oauth-client@example.com` | Specific OAuth client |
-| **Group** | `group-name` | `engineering`, `sales` | Named group (resolved from token) |
+| **Role** | `role@domain` | `admin@example.com`, `editor@example.com` | Every token carrying that role word at that domain |
+| **User ID** | `uid@domain` | `user-123@example.com` | Specific user (with `x-can-with-id-policies`) |
+| **App ID** | `aid@domain` | `my-app@example.com` | Specific app (with `x-can-with-id-policies`) |
+| **Client ID** | `cid@domain` | `oauth-client@example.com` | Specific OAuth client (with `x-can-with-id-policies`) |
+
+Every subject is `local@domain[:scope]` — `@IsSubject` requires the part before `:` to be an email,
+so `@admin` and a bare `engineering` are rejected. A role is a word in the user's `subjects[]`; the
+platform appends `@domain` at authorization time and, if the client carries an `RBAC` config
+(`context/configs`), expands the word into permission subjects first. The full rule:
+[authorization.md → Subject format](../../../api/authorization.md#subject-format).
 
 ### Field Restrictions
 
@@ -225,8 +230,8 @@ When `field` is specified, the token can **only** access those fields:
 
 ```typescript
 {
-  subject: "@editor",
-  action: "write",
+  subject: "editor@example.com",
+  action: "update",
   object: "content:articles",
   field: ["title", "body", "tags"]  // Can only modify these fields
 }
@@ -255,8 +260,8 @@ The `location` field enables IP-based restrictions:
 
 ```typescript
 {
-  subject: "@admin",
-  action: "manage",
+  subject: "admin@example.com",
+  action: "any",
   object: "auth:clients",
   location: ["192.168.1.0/24", "10.0.0.5"]  // Only from these IPs
 }
@@ -270,10 +275,10 @@ The `time` field enables temporal access control:
 
 ```typescript
 {
-  subject: "@contractor",
+  subject: "contractor@example.com",
   action: "read",
   object: "identity:users",
-  time: [ { cron_exp: "0 0 9 * * 1-5", duration: 28800000 } ]  // corrected 2026-09-02 — GrantTime is {cron_exp, duration}, never {start, end}; authorization.md owns the shape  // Only accessible during summer
+  time: [ { cron_exp: "0 9 * * 1-5", duration: 32400 } ]  // Mon–Fri from 09:00, open for 9 hours (duration in seconds — authorization.md owns the shape)
 }
 ```
 

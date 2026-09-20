@@ -93,7 +93,7 @@ Each session also has a private set of control topics under `{identity}/{session
 
 ## Client Usage
 
-The canonical client uses the [`mqtt`](https://www.npmjs.com/package/mqtt) npm package. The reference implementation is the `useSocket` composable in `examples/phc-frontend/app/composables/useSocket.ts`; the same code runs in any Node.js backend (point it at `mqtt://host:1883` instead of the WebSocket URL).
+The canonical client uses the [`mqtt`](https://www.npmjs.com/package/mqtt) npm package. The reference implementation is the `useSocket` composable in the workspace's `clients/official/client-frontend/composables/useSocket.ts`; the same code runs in any Node.js backend (point it at `mqtt://host:1883` instead of the WebSocket URL).
 
 ### Connecting
 

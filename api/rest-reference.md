@@ -1,6 +1,6 @@
 # REST API Reference
 
-> Envelope corrected 2026-09-02: list replies are `{ items: [...] }` and counts `{ total: N }` (the platform's `Items`/`Total` serializers); the `{data, count}` shape some examples carried never shipped.
+> List replies are `{ items: [...] }` and counts `{ total: N }` — the platform's `Items`/`Total` serializers. There is no `{data, count}` list shape.
 
 The gateway exposes a uniform REST interface for all 14 domain services. Every collection shares the same 11-endpoint pattern. This document covers the pattern, all available collections, and curl examples using the `identity/users` collection.
 
@@ -109,8 +109,7 @@ curl -X POST "$BASE/identity/users/bulk" \
   "items": [
     { "id": "64a1b2c3...", "username": "alice", ... },
     { "id": "64a1b2c4...", "username": "bob",   ... }
-  ],
-  "total": 2
+  ]
 }
 ```
 
@@ -149,8 +148,7 @@ curl "$BASE/identity/users?query={}&zone=own" \
   "items": [
     { "id": "64a1b2c3...", "username": "alice", ... },
     { "id": "64a1b2c4...", "username": "bob",   ... }
-  ],
-  "total": 2
+  ]
 }
 ```
 
@@ -209,16 +207,15 @@ curl -X PATCH "$BASE/identity/users/64a1b2c3d4e5f6a7b8c9d0e1" \
 Requires `manage:` scope. Updates all documents matching the query filter.
 
 ```bash
-curl -X PATCH "$BASE/identity/users/bulk" \
-  --get \
-  --data-urlencode 'query={"status":"inactive"}' \
-  -X PATCH \
+curl -X PATCH "$BASE/identity/users/bulk?query=%7B%22status%22%3A%22inactive%22%7D" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "archived": true }'
 ```
 
-> For `PATCH /bulk`, pass the filter as query params and the update body as JSON.
+> For `PATCH /bulk`, pass the filter as query params and the update body as JSON. Do **not** combine
+> `--get` with `-d` here: `--get` moves every `-d` into the query string, so the update body never
+> reaches the server.
 
 **Response:**
 
@@ -398,10 +395,12 @@ All responses are wrapped in a consistent envelope:
 
 ```json
 {
-  "items": [ ...documents... ],
-  "count": 42
+  "items": [ ...documents... ]
 }
 ```
+
+`ItemsSerializer` declares an optional `meta`, which the base list handlers leave unset; a list
+reply carries no `total`/`count` — ask `/count` for that.
 
 ### Count / total
 

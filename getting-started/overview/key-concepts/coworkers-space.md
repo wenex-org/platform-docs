@@ -49,7 +49,7 @@ At token issuance time the Platform reads the client's `coworkers[]` and embeds 
 
 ```json
 {
-  "sub": "user_id",
+  "uid": "user_id",
   "cid": "68fc7a456e8fa60ae29c3d02",
   "client_id": "68fc7a456e8fa60ae29c3d02",
   "coworker": "68fc7a456e8fa60ae29c3d02 71ab2b789f1ea71bf30d4e13",

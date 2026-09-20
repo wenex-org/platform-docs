@@ -16,7 +16,7 @@ sequenceDiagram
     participant H as Handler
 
     C->>AG: Request + Authorization header
-    AG-->>C: 401 if token missing / invalid / blacklisted
+    AG-->>C: 401 if token missing / invalid; 403 "blacklisted" if its session was logged out
     AG->>SG: token attached to req
     SG-->>C: 403 if token.scope lacks required scope
     SG->>PG: scope verified
@@ -104,7 +104,7 @@ curl -X POST http://localhost:3010/auth/can \
 
 | Field | Type | Description |
 |---|---|---|
-| `action` | `Action` | The action to test: `read`, `write`, `manage`, etc. |
+| `action` | `Action` | The action to test: one of the `Action` enum — `create`, `read`, `update`, `delete`, `restore`, `destroy`, a special action, or `any` (`read`/`write`/`manage` are OAuth **scope** verbs, not grant actions) |
 | `object` | `Resource` | The resource: `service:collection` |
 | `subjects` | `string[]` | Override subjects (defaults to `token.subject`) |
 | `strict` | `string` | `"obj"` — exact object match only, no wildcard fallback |
@@ -146,8 +146,8 @@ A **Grant** is a MongoDB document in the `auth/grants` collection. It defines wh
 
 ```typescript
 interface Grant {
-  subject: string;       // Role or identity (@admin, user@domain, aid@domain, etc.)
-  action: Action;        // read, write, manage, or custom actions
+  subject: string;       // <local>@<domain>[:scope] — the local part is a role word, uid, aid or cid
+  action: Action;        // create | read | update | delete | restore | destroy | a special action | any
   object: Resource;      // service:resource or service:* (wildcard)
 
   // Constraints (optional)
@@ -162,8 +162,8 @@ interface Grant {
 
 | Field | Type | Required | Description |
 |---|---|:---:|---|
-| `subject` | `string` | ✅ | ABAC subject: `{username}@{domain}` |
-| `action` | `Action` | ✅ | `read`, `write`, `manage`, or a special action |
+| `subject` | `string` | ✅ | ABAC subject: `{local}@{domain}[:scope]` — `@IsSubject` requires the part before `:` to be an email |
+| `action` | `Action` | ✅ | `create`, `read`, `update`, `delete`, `restore`, `destroy`, a special action, or `any` |
 | `object` | `Resource` | ✅ | `service:collection` or `service:*` (wildcard) |
 | `field` | `string[]` | | Field-level allowlist — only these fields may be queried or returned |
 | `filter` | `string[]` | | Row-level filter notation — restricts which documents match |
@@ -173,24 +173,33 @@ interface Grant {
 ### Subject format
 
 ```
-{username}@{domain}
+{local}@{domain}[:{scope}]
 ```
 
-- The `@{domain}` suffix is **required** in grants.
-- `identity/users` stores subjects **without** the domain suffix — the suffix is appended at grant creation time.
-- The domain must be registered in the client's allowed domain list.
+- A grant subject is validated by `@IsSubject`: the part before an optional `:` **must be an email**
+  (`local@domain`), so a bare word (`admin`, `engineering`) or an `@role` spelling is rejected with
+  `subject must be a valid subject`.
+- `identity/users` stores subjects **without** the domain suffix (`user`, `admin`); the token's
+  `subject` is those words joined, and `AuthorizationModel.fixSubjects` appends `@{domain}` to each
+  one before matching, so a user with subject `admin` matches the grant `admin@example.com`.
+- **Roles are expanded, not registered.** If the client has a `context/configs` row with key `RBAC`,
+  its entry for the token's domain maps each role word to permission names and each permission to
+  leaf subjects; the token's words are replaced by those leaves before `@{domain}` is appended.
+  Without such a config, the words are the subjects. There is no `/auth/roles` endpoint.
+- Sending `x-can-with-id-policies` also adds `uid@domain`, `aid@domain` and `cid@domain`, which is
+  how a grant can name one user, app or client.
 
 | Subject | Grants Access To | Example |
 |---|---|---|
-| `@role-name` | All users with this role | `@admin` → everyone with admin role |
-| `uid@domain` | Specific user at domain | `john@example.com` → user john |
-| `aid@domain` | Specific app at domain | `web-app@example.com` → web-app |
-| `cid@domain` | Specific OAuth client | `mobile-client@example.com` |
-| `group-name` | Anyone in group (from RBAC) | `engineering` → everyone in engineering group |
+| `role@domain` | Every token carrying that role word at that domain | `admin@example.com` |
+| `uid@domain` | One user (with `x-can-with-id-policies`) | `<uid>@example.com` |
+| `aid@domain` | One app (with `x-can-with-id-policies`) | `<aid>@example.com` |
+| `cid@domain` | One OAuth client (with `x-can-with-id-policies`) | `<cid>@example.com` |
+| `local@domain:scope` | The same, restricted to one scope suffix | `admin@example.com:reports` |
 
 ### Special actions
 
-Beyond `read`, `write`, and `manage`, the platform defines fine-grained special actions:
+Beyond the six CRUD actions (`create`, `read`, `update`, `delete`, `restore`, `destroy`), the platform defines fine-grained special actions:
 
 | Action | Example resource |
 |---|---|
@@ -239,8 +248,8 @@ When a grant specifies `field`, the token can **only** access those fields on re
 
 ```typescript
 {
-  subject: "@editor",
-  action: "write",
+  subject: "editor@example.com",
+  action: "update",
   object: "content:articles",
   field: ["title", "body", "tags", "status"]
 }
@@ -271,7 +280,7 @@ Multiple filters in a grant are combined with **OR**:
 
 ```typescript
 {
-  subject: "@user",
+  subject: "user@example.com",
   action: "read",
   object: "content:notes",
   filter: ["{ owner: token.uid }", "{ shares: token.uid }"]
@@ -298,8 +307,8 @@ When a grant specifies `location`, requests from outside those IP addresses are 
 
 ```typescript
 {
-  subject: "@admin",
-  action: "manage",
+  subject: "admin@example.com",
+  action: "any",
   object: "auth:clients",
   location: ["192.168.1.0/24", "10.0.0.0/8"]
 }
@@ -313,7 +322,7 @@ When a grant specifies `time`, access is only allowed during the specified windo
 
 ```typescript
 {
-  subject: "@contractor",
+  subject: "contractor@example.com",
   action: "read",
   object: "identity:users",
   time: [{ "cron_exp": "0 9 * * 1-5", "duration": 32400 }]
@@ -367,16 +376,7 @@ For every field in the Mongo query, the interceptor validates it against the gra
 
 ### 3. Zone exploit checking
 
-The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or query param (default `own,share`).
-
-| Zone | Automatic filter |
-|---|---|
-| `own` | `owner === token.uid` |
-| `share` | `shares[]` contains `token.uid` |
-| `group` | `groups[]` intersects user's group memberships |
-| `client` | token's `cid` ∈ document `clients[]` (corrected 2026-09-02 — no `client_id` field exists; access-control.md owns this table) |
-
-Zones can be combined: `?zone=own,share`
+The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or query param (default `own,share`). The filter each zone applies and the combination rules (`own`/`share` OR-ed, `group`/`client` AND-ed) are defined once, in [Access Control → Zone Filtering](../getting-started/overview/key-concepts/access-control.md#zone-filtering); `own` matches `owner` against `uid ?? aid ?? cid`, `client` matches `cid` against `clients[]` (there is no `client_id` field on documents).
 
 ### 4. Group query validation
 
@@ -403,9 +403,9 @@ that base visibility.
 
 ### Pattern 1: Role-based access (RBAC)
 
-Assign roles to users and create grants per role. Using `@role` subjects makes permissions easy to manage at scale.
+Assign roles to users and create grants per role. A role is a word in the user's `subjects[]` (`editor`), and the grant that matches it is `editor@{domain}` — see *Subject format*.
 
-**1. Roles are virtual subjects** — there is no role registry to create and no `/auth/roles` endpoint. Any `@role-name` string (e.g. `@editor`) is used directly as a grant `subject` and as a user `subjects[]` entry.
+**1. Roles are words, not records** — there is no role registry and no `/auth/roles` endpoint. A user carries `subjects: ["editor"]`; the token's subject becomes `editor@example.com` at authorization time, and that is the grant `subject` to write. An optional `RBAC` config on the client expands a role word into permission subjects before matching.
 
 **2. Create grants for each role:**
 
@@ -415,8 +415,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@admin",
-    "action": "manage",
+    "subject": "admin@example.com",
+    "action": "any",
     "object": "content:articles"
   }'
 
@@ -425,8 +425,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@editor",
-    "action": "write",
+    "subject": "editor@example.com",
+    "action": "update",
     "object": "content:articles",
     "filter": ["{ owner: token.uid }"]
   }'
@@ -436,7 +436,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@viewer",
+    "subject": "viewer@example.com",
     "action": "read",
     "object": "content:articles",
     "filter": ["{ published: true }"]
@@ -449,7 +449,7 @@ curl -X POST http://localhost:3010/auth/grants \
 curl -X PATCH http://localhost:3010/identity/users/user-123 \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{ "subjects": ["@editor"] }'
+  -d '{ "subjects": ["editor@example.com"] }'
 ```
 
 **Client-side check:**
@@ -458,7 +458,7 @@ curl -X PATCH http://localhost:3010/identity/users/user-123 \
 const canDelete = await fetch('/auth/can', {
   method: 'POST',
   headers: { 'Authorization': `Bearer ${token}` },
-  body: JSON.stringify({ action: 'manage', object: 'content:articles' })
+  body: JSON.stringify({ action: 'any', object: 'content:articles' })
 }).then(r => r.json()).then(r => r.data.granted);
 
 if (canDelete) showDeleteButton();
@@ -474,7 +474,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@user",
+    "subject": "user@example.com",
     "action": "read",
     "object": "identity:users",
     "filter": ["{ owner: token.uid }"]
@@ -485,8 +485,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@user",
-    "action": "write",
+    "subject": "user@example.com",
+    "action": "update",
     "object": "identity:users",
     "filter": ["{ owner: token.uid }"],
     "field": ["name", "email", "phone"]
@@ -521,7 +521,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "engineering",
+    "subject": "engineering@example.com",
     "action": "read",
     "object": "content:documentation",
     "filter": ["{ groups: token.domain }"]
@@ -552,7 +552,9 @@ curl -X POST http://localhost:3010/content/documentation \
 
 ### Pattern 4: Client isolation (multi-tenancy)
 
-Different OAuth clients can only access their own data.
+Different OAuth clients can only access their own data. A grant naming one client uses its
+`cid@domain` subject, which the token only carries when the request sends `x-can-with-id-policies`
+(see *Subject format*; the example clients below are `web-app` and `mobile-client` by cid).
 
 ```bash
 # Web app can only access its own notes
@@ -560,7 +562,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "client:web-app",
+    "subject": "web-app@example.com",
     "action": "read",
     "object": "content:notes",
     "filter": ["{ clients: token.cid }"]
@@ -571,7 +573,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "client:mobile-app",
+    "subject": "mobile-app@example.com",
     "action": "read",
     "object": "content:notes",
     "filter": ["{ clients: token.cid }"]
@@ -591,7 +593,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@contractor-john",
+    "subject": "contractor-john@example.com",
     "action": "read",
     "object": "identity:users",
     "time": [
@@ -609,8 +611,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@holiday-staff",
-    "action": "write",
+    "subject": "holiday-staff@example.com",
+    "action": "update",
     "object": "financial:invoices",
     "time": [
       { "cron_exp": "0 8 * * 6,0", "duration": 36000 },
@@ -628,8 +630,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@maintenance",
-    "action": "manage",
+    "subject": "maintenance@example.com",
+    "action": "any",
     "object": "auth:clients",
     "time": [
       { "cron_exp": "0 22 * * 5", "duration": 28800 }
@@ -650,8 +652,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@admin",
-    "action": "manage",
+    "subject": "admin@example.com",
+    "action": "any",
     "object": "auth:clients",
     "location": ["203.0.113.0/24"]
   }'
@@ -666,7 +668,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@employee",
+    "subject": "employee@example.com",
     "action": "read",
     "object": "identity:users",
     "location": [
@@ -699,8 +701,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@admin",
-    "action": "write",
+    "subject": "admin@example.com",
+    "action": "update",
     "object": "identity:users"
   }'
 
@@ -709,8 +711,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@user",
-    "action": "write",
+    "subject": "user@example.com",
+    "action": "update",
     "object": "identity:users",
     "filter": ["{ owner: token.uid }"],
     "field": ["name", "email", "phone", "avatar"]
@@ -743,7 +745,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@user",
+    "subject": "user@example.com",
     "action": "read",
     "object": "content:notes",
     "filter": [
@@ -773,7 +775,7 @@ const notes = await fetch('/content/notes?zone=own,share', {
 
 ### Pattern 9: Custom actions
 
-Applications can define permissions beyond the standard `read` / `write` / `manage`.
+Applications can define permissions beyond the standard CRUD actions (`create` … `destroy`).
 
 ```bash
 # Only editors can publish articles
@@ -781,7 +783,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@editor",
+    "subject": "editor@example.com",
     "action": "publish",
     "object": "content:articles"
   }'
@@ -791,7 +793,7 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@manager",
+    "subject": "manager@example.com",
     "action": "archive",
     "object": "content:articles"
   }'
@@ -816,8 +818,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "subject": "@manager",
-    "action": "write",
+    "subject": "manager@example.com",
+    "action": "update",
     "object": "financial:invoices",
     "filter": [
       "{ department: token.department }",
@@ -867,7 +869,7 @@ curl http://localhost:3010/auth/verify -H "Authorization: Bearer $TOKEN" | jq .d
 ### List applicable grants
 
 ```bash
-curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"@user"}' \
+curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"user@example.com"}' \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
@@ -891,7 +893,7 @@ curl "http://localhost:3010/content/notes/note-123" \
 ### Check grant field restrictions
 
 ```bash
-curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"@user"}' \
+curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"user@example.com"}' \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.items[] | {object, field}'
 ```
 
@@ -899,13 +901,14 @@ If `field` is set, only those fields are accessible — the grant itself tells y
 
 ### Enable debug logging
 
-Set environment variable `DEBUG=wnx:auth:*` to see authorization decision logs.
+Set environment variable `DEBUG=wnx:policy-guard*,wnx:authority-interceptor*` to see authorization decision logs — `logger(name)` builds each namespace as `wnx:<kebab-case class name>` (`PolicyGuard` → `wnx:policy-guard`); `DEBUG=wnx:*` shows everything.
 
 ## Error reference
 
 | Status | Guard / Interceptor | Cause |
 |---|---|---|
-| `401 Unauthorized` | `AuthGuard` | Missing, expired, or blacklisted token |
+| `401 Unauthorized` | `AuthGuard` | Missing or expired token |
+| `403 Forbidden` (`blacklisted`) | `BlacklistService.verifyToken` | A token whose session was deleted (logout) |
 | `403 Forbidden` | `AuthGuard` | `strict` token without valid `x-api-key` |
 | `403 Forbidden` | `ScopeGuard` | Token scope does not cover the required scope |
 | `403 Forbidden` | `PolicyGuard` | No matching grant for this action + resource |
@@ -914,7 +917,7 @@ Set environment variable `DEBUG=wnx:auth:*` to see authorization decision logs.
 
 ## Best practices
 
-1. **Use roles (`@role`) over individual identities** — easier to manage at scale
+1. **Use role subjects (`role@domain`) over individual identities** — easier to manage at scale
 2. **Combine multiple grants** — use OR logic with multiple filter/time windows
 3. **Limit field access** — specify exactly which fields tokens can see/modify
 4. **IP whitelist for sensitive operations** — especially for admin/manage actions

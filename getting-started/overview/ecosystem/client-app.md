@@ -739,7 +739,7 @@ The services app implements the full user-facing authentication flow by wrapping
 
 **Altcha CAPTCHA** — all public auth endpoints require a valid Altcha proof-of-work token in the request body as `captcha`. The `AltchaService` validates it server-side using `ALTCHA_HMAC_KEY`.
 
-**Strict tokens** — when `STRICT_TOKEN=true`, the token endpoint enforces that the user already exists in the Platform before issuing a JWT. Disable only for development.
+**Strict tokens** — `STRICT_TOKEN=true` makes the client's `/auth/token` request a **strict** platform token (`data.strict = STRICT_TOKEN` in the template's `AuthService.token`): the JWT then carries `strict: true`, and every platform call made with it must also present a valid `x-api-key` whose `whitelist` admits the caller's IP ([authentication.md → Strict tokens](../../../api/authentication.md)). It says nothing about whether the user already exists. Disable only for development.
 
 **Policy enforcement** — protected endpoints use `@SetPolicy(action, resource)`:
 
@@ -773,7 +773,7 @@ The `AuthGuard` in the workers app checks that the incoming `Authorization` head
 | `CID` | Same as `CLIENT_ID` — used in seeding scripts | `6804c24f...` |
 | `UID` | Root user MongoId — used in seeding scripts | `680621e8...` |
 | `COWORKERS` | Comma-separated coworker client IDs | `id1,id2` |
-| `STRICT_TOKEN` | Reject tokens for unregistered users | `true` |
+| `STRICT_TOKEN` | Issue strict platform tokens (the `x-api-key` flag on the JWT) | `true` |
 | `ROOT_DOMAIN` | Tenant domain for RBAC rules | `example.com` |
 | `ROOT_SUBJECT` | Root user email | `root@example.com` |
 | `CLIENT_BASE_URL` | Frontend origin (for CORS, email links) | `http://localhost:3005` |

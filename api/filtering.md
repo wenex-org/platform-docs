@@ -207,12 +207,7 @@ query {
 
 The `zone` parameter is a query parameter (not part of the filter body) that applies automatic ownership scoping via `AuthorityInterceptor`.
 
-| Value | Behavior |
-|---|---|
-| `own` | Documents where `owner` equals authenticated user |
-| `share` | Documents where authenticated user is in `shares[]` |
-| `group` | Documents where authenticated user's domain/email matches `groups[]` |
-| `client` | Documents belonging to the OAuth `client_id` in the token |
+The four values — `own`, `share`, `group`, `client` — and the filter each applies are defined once in [Access Control → Zone Filtering](../getting-started/overview/key-concepts/access-control.md#zone-filtering) (`own` matches `owner` against `uid ?? aid ?? cid`; `client` matches the token's `cid` against `clients[]`).
 
 Zones can be combined with commas. Note the combination is **not** a plain union: `own`/`share` are OR-ed together, while `group` and `client` are each AND-ed as additional constraints. See [Access Control → Zone Combination Logic](../getting-started/overview/key-concepts/access-control.md#zone-combination-logic) for the exact semantics.
 
@@ -249,8 +244,7 @@ Equivalent GraphQL:
 ```graphql
 query GetTransactions($filter: FilterDto!) {
   findFinancialTransaction(filter: $filter) {
-    count
-    data {
+    items {
       id
       amount
       status
@@ -293,9 +287,7 @@ curl "$BASE/financial/transactions/count" \
 For `PATCH /bulk`, pass the query as a query parameter and the update fields in the JSON body:
 
 ```bash
-curl -X PATCH "$BASE/financial/transactions/bulk" \
-  --get \
-  --data-urlencode 'query={"status":"pending"}' \
+curl -X PATCH "$BASE/financial/transactions/bulk?query=%7B%22status%22%3A%22pending%22%7D" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{ "status": "failed" }'

@@ -1,6 +1,6 @@
 # MCP Integration — Model Context Protocol
 
-The Wenex Platform gateway exposes an MCP (Model Context Protocol) server at `GET /mcp`. This allows AI agents (Claude, GPT, Ollama-backed agents) to interact with the platform programmatically using the standardized tool-use protocol.
+The Wenex Platform gateway exposes an MCP (Model Context Protocol) server at `/mcp` — a Streamable HTTP transport mounted with `app.all`, so it answers `POST` (the JSON-RPC calls), `GET` (the event stream) and `DELETE` (session close) alike. This allows AI agents (Claude, GPT, Ollama-backed agents) to interact with the platform programmatically using the standardized tool-use protocol.
 
 **Endpoint:** `http://localhost:3010/mcp`
 **Transport:** Streamable HTTP (HTTP/1.1 chunked)
@@ -35,7 +35,7 @@ sequenceDiagram
     GW-->>Agent: [auth_verify, read_documentations, ...]
 
     Agent->>GW: callTool("auth_verify")
-    GW-->>Agent: { sub, scope, exp }
+    GW-->>Agent: { uid, cid, subject, scope, exp, … }  (the JwtToken shape — no `sub` claim)
 
     Agent->>GW: callTool("read_documentations", { uri: "docs://core/resource-specification" })
     GW-->>Agent: service catalog markdown
