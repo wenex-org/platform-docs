@@ -1,3 +1,8 @@
+---
+title: "Dispatcher Worker: CQRS Webhooks"
+description: "The dispatcher worker delivers CQRS webhooks: it reads MongoDB change events from Kafka and posts them to each subscribed client's webhook URL."
+---
+
 # Dispatcher
 
 **Port:** `:4010`  
@@ -16,6 +21,8 @@ The dispatcher is the CQRS webhook delivery worker. It listens to MongoDB change
 
 ```mermaid
 sequenceDiagram
+    accTitle: Dispatcher webhook delivery
+    accDescr: The dispatcher reads a change event from Kafka, fetches each client's CQRS config from Redis, emits the scoped payload and posts it to the webhook. On failure it stashes the payload in PostgreSQL and retries through a delayed BullMQ job.
     participant Kafka
     participant Dispatcher
     participant Redis

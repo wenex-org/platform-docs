@@ -1,3 +1,8 @@
+---
+title: "Financial Service: Accounts and Wallets"
+description: "The Wenex financial service: accounts, currencies, invoices, saga-linked transactions and wallets, plus the shared Pay object."
+---
+
 # Financial
 
 **Port:** REST `:3060` · gRPC `:5060`

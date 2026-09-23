@@ -1,3 +1,7 @@
+---
+description: "The base fields on every Wenex document: identity and access, lifecycle timestamps and actors, metadata and relations, ownership, soft vs hard delete."
+---
+
 # Core Schema
 
 Every document stored in the Wenex Platform MongoDB carries a fixed set of base fields in addition to its domain-specific payload. These fields are injected or enforced by the Platform and are never set directly by the client at read time.

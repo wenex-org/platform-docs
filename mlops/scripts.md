@@ -1,3 +1,8 @@
+---
+title: "MLOps Scripts"
+description: "Write MLOps scripts: the config.yaml fields and the main() function that turns CDC archive rows into a Polars DataFrame, with an annotated example."
+---
+
 # Scripts
 
 Scripts are the core extensibility point of the MLOps pipeline. Each script defines a data source to collect from and a Python function that transforms raw CDC archive rows into a clean Polars DataFrame for storage in LakeFS Delta Lake.
@@ -6,6 +11,8 @@ Scripts are the core extensibility point of the MLOps pipeline. Each script defi
 
 ```mermaid
 graph LR
+    accTitle: How scripts run
+    accDescr: config.yaml defines the sources. Celery Beat counts archive rows in PostgreSQL and queues a worker when the threshold is met, and the worker calls the script's main() to get a Polars DataFrame and upserts it into LakeFS.
     CFG["scripts/config.yaml\ndefines sources"]
     BEAT["Celery Beat\ndb_check every 5 min"]
     PG["PostgreSQL\narchive rows"]

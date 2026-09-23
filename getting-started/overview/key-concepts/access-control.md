@@ -1,3 +1,8 @@
+---
+title: "Access Control (ABAC)"
+description: "Wenex attribute-based access control: the four ownership fields, zone filtering, the guard chain, query refinement, grants and permission resolution."
+---
+
 # Access Control
 
 The Platform enforces access control through **Attribute-Based Access Control (ABAC)** — a model where read visibility is determined entirely by attributes on each document, not by roles or hardcoded rules.
@@ -85,6 +90,8 @@ Every request passes through three guards in order before reaching the service l
 
 ```mermaid
 flowchart LR
+    accTitle: Guard chain
+    accDescr: An incoming request passes AuthGuard, which validates the JWT or APT, ScopeGuard, which checks token scopes, and PolicyGuard, which checks the ABAC policy, before reaching the service.
     REQ["Incoming Request"] --> AG["AuthGuard\nvalidates JWT / APT"] --> SG["ScopeGuard\nchecks token scopes"] --> PG["PolicyGuard\nABAC policy via abacl"] --> SVC["Service"]
 ```
 
@@ -388,6 +395,8 @@ For mutating requests (create, update, delete), an additional interceptor chain 
 
 ```mermaid
 flowchart LR
+    accTitle: Write interceptor chain
+    accDescr: After PolicyGuard a write passes the FieldInterceptor, which filters body fields per grant, the ValidationInterceptor, which validates the DTO, and the OwnershipInterceptor, which injects owner, groups, clients and creator fields.
     PG["PolicyGuard"] --> FI["FieldInterceptor\nfilters request body\nfields per ABAC grant"] --> VI["ValidationInterceptor\nvalidates DTO shape"] --> OI["OwnershipInterceptor\ninjects owner, groups,\nclients, created_by/in"] --> SVC["Service"]
 ```
 

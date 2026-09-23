@@ -1,3 +1,8 @@
+---
+title: "Content Service: Notes, Posts and Tickets"
+description: "The Wenex content service: personal and shared notes, published posts and articles, and support tickets, with their fields and query tips."
+---
+
 # Content
 
 **Port:** REST `:3110` · gRPC `:5110`

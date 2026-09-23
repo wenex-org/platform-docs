@@ -1,3 +1,8 @@
+---
+title: "Gateway: Request Pipeline and Endpoints"
+description: "Inside the Wenex gateway: the 16-stage request and 5-stage response pipeline, the REST, GraphQL and MCP surfaces, health checks and exposed endpoints."
+---
+
 # Gateway
 
 ## Request Pipeline
@@ -6,6 +11,8 @@ A standard REST request traverses a fixed 16-stage pipeline inside the Platform 
 
 ```mermaid
 sequenceDiagram
+    accTitle: Gateway request and response pipeline
+    accDescr: A request with a bearer token passes the gateway's header, security, rate and cache, and context stages, goes to the microservice over gRPC and MongoDB, then is serialized, audited and returned. Writes also emit a Kafka event.
     participant C as Client
     participant GW as Platform Gateway :3010
     participant Svc as Microservice gRPC
@@ -57,12 +64,14 @@ The gateway is the sole entry point for external traffic. It hosts three protoco
 
 ```mermaid
 graph TB
+    accTitle: Gateway internals
+    accDescr: Inside the gateway on port 3010, REST and GraphQL requests pass the middleware pipeline and then the AuthGuard, ScopeGuard and PolicyGuard, while MCP tool calls go straight to the guards.
     subgraph gw["Gateway :3010"]
         REST["REST<br/>/api  /auth  /identity  …"]
         GQL["GraphQL<br/>/graphql"]
         MCP["MCP Tools<br/>/mcp"]
 
-        subgraph Middleware Pipeline
+        subgraph MW[Middleware Pipeline]
             XID[XRequestIdInterceptor]
             ETag[ETagInterceptor]
             NC[NamingConventionInterceptor]
@@ -76,8 +85,8 @@ graph TB
         end
     end
 
-    REST --> Middleware Pipeline --> Guards
-    GQL --> Middleware Pipeline --> Guards
+    REST --> MW --> Guards
+    GQL --> MW --> Guards
     MCP --> Guards
 ```
 

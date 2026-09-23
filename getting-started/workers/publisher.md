@@ -1,3 +1,8 @@
+---
+title: "Publisher Worker: MQTT Notifications"
+description: "The publisher worker sends real-time MQTT notifications, resolving topics from each changed document's owner, shares and clients."
+---
+
 # Publisher
 
 **Port:** `:4050`  

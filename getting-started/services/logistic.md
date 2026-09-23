@@ -1,3 +1,8 @@
+---
+title: "Logistic Service: Locations and Travels"
+description: "The Wenex logistic service: locations, drivers, vehicles, travels and cargoes, with OpenStreetMap geocoding and Valhalla routing."
+---
+
 # Logistic
 
 **Port:** REST `:3120` · gRPC `:5120`

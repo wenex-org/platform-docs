@@ -1,3 +1,8 @@
+---
+title: "Identity Service: Users and Sessions"
+description: "The Wenex identity service: user accounts, extended profiles and login sessions, the users that every other service references."
+---
+
 # Identity
 
 **Port:** REST `:3080` · gRPC `:5080`

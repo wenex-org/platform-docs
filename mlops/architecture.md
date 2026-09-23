@@ -1,3 +1,7 @@
+---
+description: "Wenex MLOps architecture: MongoDB changes via Kafka CDC, archived in PostgreSQL, turned into versioned Delta Lake tables in LakeFS by Python scripts."
+---
+
 # MLOps Architecture
 
 The MLOps system connects the Wenex platform's operational data to a versioned ML-ready data lake. It captures every MongoDB document change through Kafka CDC, archives it in PostgreSQL, and periodically transforms it into Delta Lake tables in LakeFS via configurable Python scripts.
@@ -25,6 +29,8 @@ The MLOps system connects the Wenex platform's operational data to a versioned M
 
 ```mermaid
 sequenceDiagram
+    accTitle: MLOps data flow
+    accDescr: MongoDB changes flow through Kafka to the collector, which archives them in PostgreSQL. Every five minutes Celery Beat queues a worker when enough rows arrived, and the worker runs the script, merges the result into LakeFS, commits and tags it. A tag triggers an Airflow DAG.
     participant MDB as MongoDB
     participant KFK as Kafka
     participant COL as Collector (main.py)
@@ -80,6 +86,8 @@ sequenceDiagram
 
 ```mermaid
 graph TB
+    accTitle: Full MLOps architecture
+    accDescr: The platform's MongoDB and Kafka CDC connector feed the MLOps deployment of collectors, Beat, workers and Flower, which use PostgreSQL, Redis, LakeFS and MongoDB, while LakeFS tag webhooks drive Airflow and MLflow downstream.
     subgraph Platform["Wenex Platform"]
         MDB["MongoDB\n(Replica Set)"]
         KFK["Kafka Broker"]

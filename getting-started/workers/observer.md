@@ -1,3 +1,8 @@
+---
+title: "Observer Worker: Real-Time Statistics"
+description: "The observer worker keeps real-time create, update and delete counters per owner in special/stats, driven by MongoDB change events."
+---
+
 # Observer
 
 **Port:** `:4020`  
@@ -17,6 +22,8 @@ The observer aggregates entity-level statistics in real time. It consumes MongoD
 
 ```mermaid
 flowchart TD
+    accTitle: Stat aggregation logic
+    accDescr: For each change event the observer increments a create, update or delete counter for the relevant owner, actor and client, upserts the stat in a MongoDB transaction and emits the result to Kafka.
     A[Kafka: MongoSourcePayload] --> B{op?}
     B -->|create| C[increment CREATE counter\nfor owner + created_by + created_in]
     B -->|update| D[increment UPDATE counter\nfor updated_by + updated_in]

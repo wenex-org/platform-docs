@@ -1,3 +1,8 @@
+---
+title: "Thing Service: IoT Devices and Metrics"
+description: "The Wenex thing service for IoT: devices, their sensors and the time-series metrics those sensors produce, with query tips."
+---
+
 # Thing
 
 **Port:** REST `:3150` · gRPC `:5150`

@@ -1,3 +1,8 @@
+---
+title: "Touch Service: Email, SMS and Push"
+description: "The Wenex touch service: outbound email, in-app notices, web push and SMS, their collections and the push histories they record."
+---
+
 # Touch
 
 **Port:** REST `:3100` · gRPC `:5100`

@@ -1,3 +1,8 @@
+---
+title: "Preserver Worker: EMQX ExHook"
+description: "The preserver worker is the EMQX ExHook gRPC server that authenticates and authorizes MQTT clients, their connections and topic access."
+---
+
 # Preserver
 
 **Port:** `:4030`  

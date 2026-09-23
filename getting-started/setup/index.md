@@ -1,3 +1,8 @@
+---
+title: "Setup: Run the Wenex Platform"
+description: "Quick start for running the Wenex Platform: prerequisites, infrastructure, then a manual, Docker or Kubernetes setup, and configuration."
+---
+
 # Setup
 
 Quick-start guide for running the Wenex platform.

@@ -1,3 +1,8 @@
+---
+title: "MCP Overview: Model Context Protocol"
+description: "What the Wenex MCP server at /mcp offers AI agents like Claude, GPT and Ollama: the Streamable HTTP transport and the agent workflow."
+---
+
 # MCP Integration — Model Context Protocol
 
 The Wenex Platform gateway exposes an MCP (Model Context Protocol) server at `/mcp` — a Streamable HTTP transport mounted with `app.all`, so it answers `POST` (the JSON-RPC calls), `GET` (the event stream) and `DELETE` (session close) alike. This allows AI agents (Claude, GPT, Ollama-backed agents) to interact with the platform programmatically using the standardized tool-use protocol.
@@ -12,6 +17,8 @@ MCP is an open protocol that lets AI models communicate with external tools usin
 
 ```mermaid
 graph LR
+    accTitle: MCP connection path
+    accDescr: An AI agent such as Claude, GPT or an Ollama model uses an MCP client to reach the gateway's /mcp endpoint on port 3010, which exposes the platform tools.
     Agent["AI Agent\n(Claude / GPT / Ollama)"]
     MCP["MCP Client\n(SDK transport)"]
     GW["Gateway /mcp\n:3010"]
@@ -26,6 +33,8 @@ A typical agent interaction with the platform:
 
 ```mermaid
 sequenceDiagram
+    accTitle: MCP agent workflow
+    accDescr: The agent connects and receives the startup context, lists the tools, verifies its token with auth_verify, reads the documentation with read_documentations, then loops over resource operations such as find.
     participant Agent as AI Agent
     participant GW as Gateway /mcp
 

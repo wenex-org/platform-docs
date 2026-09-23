@@ -1,3 +1,7 @@
+---
+description: "The uniform Wenex REST API: the 11-endpoint pattern every collection shares, all collections of the 14 services, the response envelope and curl examples."
+---
+
 # REST API Reference
 
 > List replies are `{ items: [...] }` and counts `{ total: N }` — the platform's `Items`/`Total` serializers. There is no `{data, count}` list shape.

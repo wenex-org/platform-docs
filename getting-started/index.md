@@ -1,3 +1,7 @@
+---
+description: "Get the Wenex Platform running: understand the architecture, start the infrastructure, set up the platform and learn its services and workers."
+---
+
 # Getting Started
 
 Everything you need to go from zero to a running Wenex Platform instance — understand the architecture, spin up infrastructure, and start building.

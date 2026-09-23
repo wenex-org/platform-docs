@@ -1,3 +1,8 @@
+---
+title: "Configuration: Environment Variables"
+description: "Every Wenex Platform environment variable by subsystem, with its Helm values.yaml path and .env name: Redis, MongoDB, Kafka, EMQX and more."
+---
+
 # Configuration
 
 All platform configuration is expressed as environment variables. For Docker and manual deployments these live in a `.env` file; for Kubernetes they are declared under `global` in `values.yaml` and injected into pods as environment variables at runtime.

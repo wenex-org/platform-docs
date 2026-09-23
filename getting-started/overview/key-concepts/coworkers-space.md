@@ -1,3 +1,7 @@
+---
+description: "Coworkers spaces group client apps so they share data through the Platform: the coworkers claim, CQRS webhook payloads and reading coworker data."
+---
+
 # Coworkers Space
 
 A **Coworkers Space** is the organizational concept that groups multiple independent client applications so they can share data through the Platform. It is not a standalone Platform entity — it is expressed as a `coworkers[]` array on each OAuth client registration and injected as a claim into every JWT token issued to users of that client.
@@ -8,6 +12,8 @@ A Coworkers Space represents a company, team, or group of developers who collabo
 
 ```mermaid
 graph TB
+    accTitle: Coworkers space
+    accDescr: Client A and Client B each have their own backend and database inside one Coworkers space. Both write to and read from the Platform gateway and receive its CQRS webhooks.
     subgraph CW["Coworkers Space"]
         subgraph CA["Client A"]
             BEA[Backend]
@@ -68,6 +74,8 @@ The Platform's `dispatcher` worker then delivers the document to every client li
 
 ```mermaid
 sequenceDiagram
+    accTitle: Data sharing between coworkers
+    accDescr: Client A creates a note, the gateway's OwnershipInterceptor adds both client IDs, and the dispatcher worker posts the change to Client A and Client B, which each store the document in their own database.
     participant CA as Client A
     participant GW as Platform Gateway
     participant DISP as Dispatcher Worker
@@ -136,6 +144,8 @@ The following sequence shows the complete path from a user action in Client A th
 
 ```mermaid
 sequenceDiagram
+    accTitle: Full data lifecycle across a Coworkers space
+    accDescr: A Client A user creates an entity that the gateway saves with both client IDs, the dispatcher looks up each client's CQRS config and posts the change to both, and Client B keeps a local copy with the Platform schema.
     participant UA as User (Client A)
     participant CA as Client A Backend
     participant GW as Platform Gateway

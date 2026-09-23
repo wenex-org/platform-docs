@@ -1,3 +1,7 @@
+---
+description: "Subscribe to near-real-time data changes over MQTT: how the Publisher worker notifies EMQX topics, topic schemas, client usage and access control."
+---
+
 # Realtime Data (MQTT)
 
 The platform publishes data changes in **near real time** over MQTT. Whenever a document changes in MongoDB, the [Publisher](../getting-started/workers/publisher) worker resolves the set of MQTT topics that should be notified and publishes a small change-notification message to each one through EMQX. Clients subscribe to the topics they are authorized for and react to changes as they happen — no polling required.
@@ -10,6 +14,8 @@ Unlike [Streaming (SSE)](./streaming), which streams a one-shot query result ove
 
 ```mermaid
 flowchart LR
+    accTitle: Realtime MQTT architecture
+    accDescr: MongoDB change events reach the Publisher worker through Kafka and are bulk-published to the EMQX broker. Backend and frontend clients connect to EMQX over MQTT, and the Preserver worker authenticates and authorizes them with the auth service.
     Mongo[(MongoDB)] -->|CDC change events / Kafka| Pub[Publisher worker]
     Pub -->|HTTP bulk publish| EMQX[(EMQX broker)]
     EMQX <-->|MQTT :1883| C1[Backend client]

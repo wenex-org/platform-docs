@@ -1,3 +1,8 @@
+---
+title: "Auth Service: Tokens, APTs and Grants"
+description: "The Wenex auth service (REST :3020, gRPC :5020): the token endpoint, Auth Personal Tokens (APTs) and the permission grants collection."
+---
+
 # Auth
 
 See also → [Authentication](/api/authentication) for token endpoints, APTs, and the `strict` flag · [Authorization](/api/authorization) for ABAC, grants, scopes, and the `AuthorityInterceptor`

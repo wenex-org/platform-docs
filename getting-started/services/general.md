@@ -1,3 +1,8 @@
+---
+title: "General Service: Activities and Workflows"
+description: "The Wenex general service: audit activities, typed key-value artifacts, threaded comments, calendar events and BPMN-style workflow state."
+---
+
 # General
 
 **Port:** REST `:3070` · gRPC `:5070`

@@ -1,3 +1,8 @@
+---
+title: "Cleaner Worker: Data Retention"
+description: "The cleaner worker purges expired records from MongoDB, PostgreSQL and Redis in background loops, each category with its own TTL and guard."
+---
+
 # Cleaner
 
 **Port:** `:4070`  
@@ -23,6 +28,8 @@ Every sub-module follows the same producer/consumer pattern:
 
 ```mermaid
 flowchart TD
+    accTitle: Purge loop
+    accDescr: On a timer the cleaner queries records older than their TTL and skips them when a Redis lock shows a purge is running. Otherwise it emits a purge event, sets the lock, deletes the records, clears the lock and loops.
     A["@Timeout start"] --> B[query records older than TTL]
     B --> C{already purging?}
     C -->|yes, Redis lock exists| D[skip]

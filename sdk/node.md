@@ -1,3 +1,7 @@
+---
+description: "Use @wenex/sdk, the official TypeScript client for Wenex: install, authenticate, CRUD, SSE streaming, GraphQL, zones, Brotli and multi-tenant use."
+---
+
 # Node SDK — `@wenex/sdk`
 
 The `@wenex/sdk` package is the official TypeScript/JavaScript client for the Wenex Platform. It wraps the REST and GraphQL APIs with typed methods, supports streaming via SSE, Brotli compression of query strings, and multi-tenant usage.

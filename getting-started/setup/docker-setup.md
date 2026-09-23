@@ -1,3 +1,7 @@
+---
+description: "Run the Wenex gateway, services and workers as Docker containers: prepare the environment, build the image, initialize the database and start."
+---
+
 # Docker Setup
 
 Run the full platform (gateway, services, and workers) as Docker containers using the root `docker-compose.yml`. Each container uses the same image — the `SERVICE_NAME` environment variable selects which process to start.

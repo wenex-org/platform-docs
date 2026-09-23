@@ -1,3 +1,8 @@
+---
+title: "MLOps Deployment with Helm"
+description: "Deploy Wenex MLOps on Kubernetes with Helm: the Beat, Workers and Flower sub-charts, environment variables, scaling and the container image."
+---
+
 # Deployment
 
 The MLOps system is deployed on Kubernetes using a Helm chart composed of three sub-charts: **Beat**, **Workers**, and **Flower**. All three share the same container image and environment configuration defined in the parent `values.yaml`.

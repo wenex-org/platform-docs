@@ -1,3 +1,8 @@
+---
+title: "Overview: Ecosystem and Key Concepts"
+description: "Start here: the Wenex ecosystem model for building apps that share data, and the key concepts behind every document and access-control decision."
+---
+
 # Overview
 
 Before diving into setup, it helps to understand how the Wenex world is structured. This section covers two areas: the **Ecosystem** model that governs how applications are built and how they share data, and the **Key Concepts** that underpin every Platform document and access-control decision.

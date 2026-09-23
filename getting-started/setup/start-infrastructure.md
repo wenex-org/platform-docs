@@ -1,3 +1,8 @@
+---
+title: "Start the Infrastructure Stack"
+description: "Start the Wenex infrastructure with Docker Compose: a MongoDB replica set, PostgreSQL, Redis, Kafka, Elasticsearch, MinIO and EMQX."
+---
+
 # Start Infrastructure
 
 ```bash

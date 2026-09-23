@@ -1,3 +1,8 @@
+---
+title: "MLOps Model Training"
+description: "Train a PyTorch model on Delta Lake data streamed from LakeFS, with preprocessors fitted on a sample and runs, metrics and artifacts tracked in MLflow."
+---
+
 # Model Training
 
 The MLOps system stores data as Delta Lake tables in LakeFS, which can be streamed directly for model training without loading the full dataset into memory. The `example/train.py` script demonstrates an end-to-end workflow: stream data from LakeFS → preprocess on a sample → train a PyTorch MLP → track everything with MLflow.
@@ -6,6 +11,8 @@ The MLOps system stores data as Delta Lake tables in LakeFS, which can be stream
 
 ```mermaid
 graph LR
+    accTitle: Model training pipeline
+    accDescr: A Delta Lake table in LakeFS is streamed batch by batch through a PyArrow dataset into a preprocessor fitted on a sample, then into a PyTorch MLP, with losses, accuracy and artifacts logged to MLflow.
     LFS["LakeFS\nDelta Lake Table"]
     PA["PyArrow Dataset\nbatch-by-batch scanner"]
     PRE["Preprocessor\nStandardScaler + OneHotEncoder\nfitted on sample"]

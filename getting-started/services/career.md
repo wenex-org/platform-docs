@@ -1,3 +1,8 @@
+---
+title: "Career Service: Businesses, Staff and Stock"
+description: "The Wenex career service: businesses, branches, employees, customers, products, services, stores and inventory stock, with query tips."
+---
+
 # Career
 
 **Port:** REST `:3140` · gRPC `:5140`

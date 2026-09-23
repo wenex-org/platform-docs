@@ -1,3 +1,8 @@
+---
+title: "Essential Service: Distributed Sagas"
+description: "The Wenex essential service: distributed saga transactions across services, their per-step stages stored in MongoDB, and key saga behaviours."
+---
+
 # Essential
 
 **Port:** REST `:3050` · gRPC `:5050`

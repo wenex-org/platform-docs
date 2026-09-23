@@ -1,3 +1,7 @@
+---
+description: "Wenex Platform HTTP API reference: authentication, authorization, REST and GraphQL endpoints, request headers, filtering, SSE streaming and MQTT."
+---
+
 # API Reference
 
 Complete reference for the Wenex Platform HTTP API — authentication, authorization, REST and GraphQL endpoints, filtering, and real-time streaming.

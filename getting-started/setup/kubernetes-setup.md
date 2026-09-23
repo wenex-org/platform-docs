@@ -1,3 +1,8 @@
+---
+title: "Kubernetes Setup with Helm"
+description: "Deploy the Wenex Platform on Kubernetes with the official Helm chart from Artifact Hub: install the chart and control its subcharts."
+---
+
 # Kubernetes Setup
 
 Deploy the full platform on Kubernetes using the official Helm chart published to [Artifact Hub](https://artifacthub.io/packages/helm/wenex/platform).

@@ -1,3 +1,8 @@
+---
+title: "Ecosystem: Clients, Coworkers and Platform"
+description: "How Clients, Coworkers spaces and the Platform relate in the Wenex ecosystem, so independent apps can share one Platform without direct coupling."
+---
+
 # Ecosystem
 
 The Wenex ecosystem is the organizational model that lets multiple independent applications share a single Platform instance without direct coupling.

@@ -1,3 +1,7 @@
+---
+description: "Filter, paginate, project and populate Wenex find and count results with query, pagination, projection, populate and zone, over REST and GraphQL."
+---
+
 # Filtering, Pagination & Populate
 
 All `find` and `count` endpoints accept a structured filter system. This document describes every component of that system and shows how to use it via REST query parameters, REST body, and GraphQL variables.

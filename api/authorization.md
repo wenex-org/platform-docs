@@ -1,3 +1,7 @@
+---
+description: "How Wenex authorizes each request: AuthGuard, ScopeGuard and PolicyGuard, ABAC grants, field and filter restrictions, and the AuthorityInterceptor."
+---
+
 # Authorization
 
 Every authenticated request passes through three guards and one interceptor before reaching a controller handler. This page explains each layer, the ABAC data model behind them, how to manage grants, and common authorization patterns.
@@ -8,6 +12,8 @@ See also → [Authentication](/api/authentication) for token types, the `POST /a
 
 ```mermaid
 sequenceDiagram
+    accTitle: Request authorization pipeline
+    accDescr: A request passes AuthGuard, ScopeGuard, PolicyGuard and the AuthorityInterceptor before the handler responds. Each layer can reject it with 401 or 403, and the interceptor refines the query.
     participant C as Client
     participant AG as AuthGuard
     participant SG as ScopeGuard
@@ -16,7 +22,7 @@ sequenceDiagram
     participant H as Handler
 
     C->>AG: Request + Authorization header
-    AG-->>C: 401 if token missing / invalid; 403 "blacklisted" if its session was logged out
+    AG-->>C: 401 if token missing / invalid#59; 403 "blacklisted" if its session was logged out
     AG->>SG: token attached to req
     SG-->>C: 403 if token.scope lacks required scope
     SG->>PG: scope verified
@@ -839,6 +845,8 @@ This grant allows only managers to update `status` and `notes` on pending invoic
 
 ```mermaid
 sequenceDiagram
+    accTitle: Authorization walkthrough for reading one user
+    accDescr: The gateway verifies the JWT, checks the token scope, asks the auth service twice through POST /auth/can, refines the query, then fetches the user from the identity service over gRPC and returns it.
     participant FE as Client
     participant GW as Gateway
     participant AS as Auth Service

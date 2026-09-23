@@ -1,3 +1,8 @@
+---
+title: "Special Service: Files and Statistics"
+description: "The Wenex special service: file metadata and storage management on MinIO, and time-dimensioned statistical counters."
+---
+
 # Special
 
 **Port:** REST `:3090` · gRPC `:5090`

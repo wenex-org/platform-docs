@@ -1,3 +1,8 @@
+---
+title: "Domain Service: Apps and OAuth Clients"
+description: "The Wenex domain service: tenant domains, OAuth application definitions and the client registrations that scope every token and document."
+---
+
 # Domain
 
 **Port:** REST `:3030` · gRPC `:5030`

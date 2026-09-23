@@ -1,3 +1,8 @@
+---
+title: "Manual Setup from Source"
+description: "Run the Wenex Platform from source: clone and install, initialize the databases, set up Kafka Connect and start the platform."
+---
+
 # Manually Setup
 
 Run the platform from source. Follow each step in order.

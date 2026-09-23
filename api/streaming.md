@@ -1,3 +1,7 @@
+---
+description: "Stream collection documents as Server-Sent Events from the /cursor endpoint: frame format, filters, browser and SDK examples, errors, cursor vs find."
+---
+
 # Streaming — Server-Sent Events (SSE)
 
 Every collection exposes a `/cursor` endpoint that streams documents as Server-Sent Events (SSE). This is useful for real-time data feeds, progressive loading of large result sets, and live dashboards.
@@ -8,6 +12,8 @@ Every collection exposes a `/cursor` endpoint that streams documents as Server-S
 
 ```mermaid
 sequenceDiagram
+    accTitle: SSE cursor streaming sequence
+    accDescr: The client calls GET /cursor accepting text/event-stream, the gateway opens a gRPC stream to the microservice, relays each document as an SSE data frame, and closes with an end event.
     participant C as Client
     participant GW as Gateway
     participant Svc as Microservice

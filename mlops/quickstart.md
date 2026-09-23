@@ -1,3 +1,8 @@
+---
+title: "MLOps Quickstart"
+description: "Get a MongoDB collection flowing into a LakeFS Delta Lake table: add a config.yaml source, write the script, deploy with Helm and verify."
+---
+
 # Quickstart
 
 This guide walks through the minimum steps to get a MongoDB collection flowing into a LakeFS Delta Lake table using the MLOps pipeline.

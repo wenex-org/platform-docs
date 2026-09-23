@@ -1,3 +1,8 @@
+---
+title: "Building a Client App"
+description: "Build a client app on Wenex with the NestJS backend-template: structure, CQRS webhooks, local MongoDB reads, auth design, seeding and deployment."
+---
+
 # Client
 
 A **Client** is an OAuth-registered application that writes and reads data through the Platform Gateway, receives change events via CQRS webhooks, and maintains a local MongoDB copy of its data for low-latency reads and aggregation queries, custom indexing or caching.
@@ -37,6 +42,8 @@ The official starting point is the **[backend-template](https://github.com/wenex
 
 ```mermaid
 graph TB
+    accTitle: Client app architecture
+    accDescr: A frontend calls the client gateway, which runs before and after hooks on the client services over NATS and proxies data calls to the Platform gateway. The Platform's dispatcher worker posts CQRS webhooks to the client workers, which upsert into the client MongoDB.
     FE["Frontend"]
 
     subgraph Client Backend
@@ -73,6 +80,8 @@ A standard REST write from a user traverses this path:
 
 ```mermaid
 sequenceDiagram
+    accTitle: Client request flow with before and after hooks
+    accDescr: The client gateway sends a before hook to its services over NATS, forwards the enriched request to the Platform gateway, sends an after hook with the created document, and returns 201 to the frontend.
     participant FE as Frontend
     participant GW as Gateway
     participant SVC as Services (NATS)
@@ -94,6 +103,8 @@ After every Platform write, the data flows back to the client:
 
 ```mermaid
 sequenceDiagram
+    accTitle: CQRS push flow into a client
+    accDescr: The Platform dispatcher worker posts a change to the client workers' /cqrs endpoint, which upsert or delete the document in the client MongoDB and emit a NATS event for service subscribers.
     participant PUB as Platform Dispatcher Worker
     participant WRK as Client Workers :8050
     participant CDB as Client MongoDB

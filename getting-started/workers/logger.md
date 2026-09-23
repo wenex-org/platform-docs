@@ -1,3 +1,8 @@
+---
+title: "Logger Worker: Audit Logs"
+description: "The logger worker consumes audit events from Kafka and persists them to PostgreSQL for compliance, debugging and traceability."
+---
+
 # Logger
 
 **Port:** `:4060`  

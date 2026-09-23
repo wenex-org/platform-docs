@@ -1,3 +1,7 @@
+---
+description: "Trigger Apache Airflow DAGs from LakeFS tag events: the post-create-tag hook, its event payload, an example DAG and how to write your own."
+---
+
 # Airflow DAGs
 
 Apache Airflow provides the orchestration layer for ML workflows triggered by LakeFS data events. When a script's tag interval expires and the Worker creates a new LakeFS tag, a webhook fires and Airflow starts a DAG run automatically.
@@ -6,6 +10,8 @@ Apache Airflow provides the orchestration layer for ML workflows triggered by La
 
 ```mermaid
 sequenceDiagram
+    accTitle: LakeFS to Airflow trigger
+    accDescr: A worker creates a LakeFS tag, LakeFS runs its post-create-tag action and calls the Airflow API, and Airflow starts a DAG run with the LakeFS event as its configuration, which can read the Delta Lake data.
     participant WRK as MLOps Worker
     participant LFS as LakeFS
     participant AIR as Airflow

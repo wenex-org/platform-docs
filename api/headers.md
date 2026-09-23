@@ -1,3 +1,7 @@
+---
+description: "Every request header the Wenex gateway reads, from authentication and query shaping to tracing, locale, ABAC introspection and sagas, and what each does."
+---
+
 # Request Headers
 
 This is the canonical reference for every request header the Wenex Platform gateway

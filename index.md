@@ -1,5 +1,8 @@
 ---
 layout: home
+title: Wenex Platform
+titleTemplate: Open-Source NestJS Microservice Platform
+description: Open-source TypeScript and NestJS microservice platform — 14 domain services behind one REST, GraphQL and MCP gateway, with an SDK, workers and MLOps.
 
 hero:
   name: Wenex Platform
@@ -8,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /getting-started
+      link: /getting-started/
     - theme: alt
       text: GitHub
       link: https://github.com/wenex-org/platform

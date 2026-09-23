@@ -1,5 +1,5 @@
 ---
-description: Release history of the Wenex Platform
+description: "Release history of the Wenex Platform: the additions, changes and fixes in every version, following Keep a Changelog and Semantic Versioning."
 outline: 2
 prev: false
 next: false

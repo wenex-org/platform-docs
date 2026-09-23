@@ -1,3 +1,7 @@
+---
+description: "What you need before running the Wenex Platform: Git, Docker and Docker Compose, and Node.js 22 with pnpm 10.5.2 through nvm and corepack."
+---
+
 # Prerequisites
 
 **Git** is required to clone the repository and manage submodules. Any recent version works.

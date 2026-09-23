@@ -1,3 +1,7 @@
+---
+description: "Three concepts that apply to every Wenex document and request: the core schema, attribute-based access control and Coworkers spaces."
+---
+
 # Key Concepts
 
 These three concepts appear throughout the Platform and are worth understanding before reading any other section. They are not service-specific — they apply to every document, every read request, and every client application built on top of the Platform.

@@ -1,3 +1,8 @@
+---
+title: "SDK: Official Client Libraries"
+description: "Wenex Platform SDKs: @wenex/sdk, the official typed TypeScript and JavaScript client for Node.js and browsers, wrapping the REST and GraphQL APIs."
+---
+
 # SDK
 
 The Wenex Platform SDK provides a typed TypeScript/JavaScript client for interacting with the platform API.

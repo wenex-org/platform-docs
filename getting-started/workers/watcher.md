@@ -1,3 +1,8 @@
+---
+title: "Watcher Worker: Redis Cache Sync"
+description: "The watcher worker keeps the Redis cache in sync with MongoDB change events, including the grant cache used for ABAC checks."
+---
+
 # Watcher
 
 **Port:** `:4040`  
@@ -32,6 +37,8 @@ Grants are handled specially through `abacl-redis`:
 
 ```mermaid
 flowchart LR
+    accTitle: Grant caching logic
+    accDescr: On a grant change event the watcher caches an available grant in Redis on create or update, deletes it from Redis on delete or when it is no longer available, and otherwise skips it.
     A[Kafka: grant change event] --> B{op}
     B -->|create| C{isAvailable?}
     B -->|update| D{isAvailable?}

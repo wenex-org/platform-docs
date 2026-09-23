@@ -1,3 +1,8 @@
+---
+title: "Context Service: Configs and Settings"
+description: "The Wenex context service: configs for entity-scoped platform behaviour switches and settings for user-scoped preferences."
+---
+
 # Context
 
 **Port:** REST `:3040` · gRPC `:5040`

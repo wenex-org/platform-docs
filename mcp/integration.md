@@ -1,3 +1,7 @@
+---
+description: "Connect an AI agent to the Wenex MCP server: the mcp-client.ts Ollama client, authentication, observability and security considerations."
+---
+
 # MCP Integration Guide
 
 ## Connecting an Agent
@@ -37,7 +41,7 @@ console.log(result);
 
 ## Using `mcp-client.ts`
 
-The platform ships a ready-to-use interactive MCP client at [`mcp-client.ts`](../../mcp-client.ts) that connects to the gateway and uses Ollama as the LLM backend.
+The platform ships a ready-to-use interactive MCP client at [`mcp-client.ts`](https://github.com/wenex-org/platform/blob/main/mcp-client.ts) that connects to the gateway and uses Ollama as the LLM backend.
 
 ### Prerequisites
 

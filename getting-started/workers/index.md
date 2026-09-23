@@ -1,3 +1,8 @@
+---
+title: "Workers: Background Kafka Consumers"
+description: "Wenex background workers consume Kafka events from the microservices: what each worker does, their shared structure and health checks."
+---
+
 # Workers
 
 Workers are internal background processes that consume Kafka events produced by the platform's microservices. They have no public REST API — each exposes `GET /status` (health check) and `GET /metrics` (Prometheus); the dispatcher additionally serves its BullMQ dashboard at `/bullmq` and Swagger at `/api`.
@@ -6,6 +11,8 @@ Workers are internal background processes that consume Kafka events produced by 
 
 ```mermaid
 graph TD
+    accTitle: Workers overview
+    accDescr: Microservices publish change events to Kafka for the dispatcher, observer, watcher, publisher and logger workers, which write to webhooks, MongoDB, Redis, EMQX and PostgreSQL. The preserver serves EMQX over gRPC and the cleaner purges MongoDB, PostgreSQL and Redis.
     subgraph Services
         SVC["microservices\n:3020–:3150"]
     end

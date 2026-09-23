@@ -1,3 +1,7 @@
+---
+description: "The Wenex GraphQL API at /graphql: naming conventions, authentication, query and mutation examples, curl usage, filter inputs and response types."
+---
+
 # GraphQL Reference
 
 The gateway exposes a full GraphQL API at `http://localhost:3010/graphql` powered by Apollo Server. Every collection that has a REST controller also has a GraphQL resolver with identical business logic, guards, and caching behavior.

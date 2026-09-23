@@ -1,3 +1,7 @@
+---
+description: "Authenticate to the Wenex Platform API: issue JWTs with POST /auth/token, use APT personal tokens, scopes, the strict flag and x-api-key, with curl."
+---
+
 # Authentication
 
 Wenex Platform supports two token types for API access.
@@ -169,6 +173,8 @@ curl -X POST http://localhost:3010/auth/token \
 
 ```mermaid
 sequenceDiagram
+    accTitle: Token issuance flow
+    accDescr: The client posts credentials to POST /auth/token, the auth service validates them and creates a session, and the endpoint returns an HS256-signed access token, refresh token and expiry.
     Client->>Token Endpoint: POST /auth/token<br/>(credentials + grant_type)
     Token Endpoint->>Auth Service: Validate credentials<br/>Create session
     Auth Service->>Token Endpoint: Session record created
@@ -256,6 +262,8 @@ curl http://localhost:3010/auth/logout \
 
 ```mermaid
 sequenceDiagram
+    accTitle: Logout flow
+    accDescr: GET /auth/logout extracts the session ID from the bearer token, the auth service deletes the session record from MongoDB and blacklists the session ID in Redis, and the client receives OK.
     Client->>Logout Endpoint: GET /auth/logout<br/>+ Bearer token
     Logout Endpoint->>Auth Service: Extract session ID<br/>from token
     Auth Service->>MongoDB: Delete session record<br/>from identity.sessions

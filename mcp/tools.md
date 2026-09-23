@@ -1,3 +1,7 @@
+---
+description: "The 12 tools of the Wenex MCP server: auth_verify, read_documentations and 10 generic resource CRUD tools that take a resource argument."
+---
+
 # MCP Tools Reference
 
 The gateway registers a **fixed set of 12 MCP tools** — 2 core tools plus 10 generic

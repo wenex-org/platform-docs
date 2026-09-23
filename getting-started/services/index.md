@@ -1,3 +1,8 @@
+---
+title: "Services: the 14 Domain Microservices"
+description: "All 14 Wenex domain microservices: architecture, ports, the standard NestJS service internals, scope naming and health checks."
+---
+
 # Services
 
 Wenex Platform consists of 14 domain microservices. All services are NestJS applications that expose a REST API and a gRPC server.
@@ -6,7 +11,9 @@ Wenex Platform consists of 14 domain microservices. All services are NestJS appl
 
 ```mermaid
 graph LR
-    subgraph Core Services
+    accTitle: Service architecture summary
+    accDescr: The gateway on port 3010 routes to five core services and nine business services, each listed with its REST and gRPC ports, and every service publishes to Kafka.
+    subgraph CORE[Core Services]
         AUTH["auth<br/>:3020/:5020"]
         DOM["domain<br/>:3030/:5030"]
         CTX["context<br/>:3040/:5040"]
@@ -14,7 +21,7 @@ graph LR
         ID["identity<br/>:3080/:5080"]
     end
 
-    subgraph Business Services
+    subgraph BIZ[Business Services]
         FIN["financial<br/>:3060/:5060"]
         CAR["career<br/>:3140/:5140"]
         SPE["special<br/>:3090/:5090"]
@@ -26,10 +33,10 @@ graph LR
         THG["thing<br/>:3150/:5150"]
     end
 
-    GW[Gateway :3010] --> Core Services
-    GW --> Business Services
-    Core Services --> Kafka[(Kafka)]
-    Business Services --> Kafka
+    GW[Gateway :3010] --> CORE
+    GW --> BIZ
+    CORE --> Kafka[(Kafka)]
+    BIZ --> Kafka
 ```
 
 ## Service Index

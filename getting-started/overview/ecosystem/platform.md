@@ -1,3 +1,8 @@
+---
+title: "Platform Architecture"
+description: "Wenex Platform architecture: the shared backend that owns data shape, access control, document lifecycle and events, its design principles and topology."
+---
+
 # Platform
 
 The Wenex Platform is the shared backend infrastructure that every client application in the ecosystem writes to, reads from, and receives events from. It owns data shape, access control, document lifecycle, and event delivery — nothing more. All domain business logic lives in client applications.
@@ -8,6 +13,8 @@ Multiple independent client applications, organized into **Coworkers spaces**, s
 
 ```mermaid
 graph TB
+    accTitle: Wenex Platform at a glance
+    accDescr: Clients reach the gateway over HTTP or WebSocket, the gateway calls domain services over gRPC, services publish events to Kafka for the workers, and the platform's data lives in MongoDB, PostgreSQL, Redis, Elasticsearch, EMQX and MinIO.
     Client["Client<br/>(Browser / Mobile / AI Agent)"]
 
     subgraph Platform
@@ -74,6 +81,8 @@ The Gateway communicates with every domain service over gRPC. Services publish K
 
 ```mermaid
 graph LR
+    accTitle: Communication topology
+    accDescr: The gateway calls all 14 domain services over gRPC. Services publish events to Kafka, which the dispatcher, observer, watcher, publisher and logger workers consume.
     GW["Gateway"] -->|gRPC| AUTH["Auth :5020"]
     GW -->|gRPC| ID["Identity :5080"]
     GW -->|gRPC| FIN["Financial :5060"]
@@ -97,7 +106,7 @@ graph LR
     KF --> OBS["Observer Worker"]
     KF --> WATCH["Watcher Worker"]
     KF --> PUB["Publisher Worker"]
-    KF --> LOG["Logger Worker"]
+    KF --> LGR["Logger Worker"]
     %% Preserver is gRPC-only (EMQX exhook), not a Kafka consumer
 ```
 

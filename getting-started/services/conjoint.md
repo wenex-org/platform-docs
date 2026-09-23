@@ -1,3 +1,8 @@
+---
+title: "Conjoint Service: Messaging and Channels"
+description: "The Wenex conjoint messaging service: accounts, channels, contacts, members and messages, delivered over EMQX/MQTT by the publisher worker."
+---
+
 # Conjoint
 
 **Port:** REST `:3130` · gRPC `:5130`
