@@ -6,7 +6,7 @@ description: "Authenticate to the Wenex Platform API: issue JWTs with POST /auth
 
 Wenex Platform supports two token types for API access.
 
-| | JWT | APT (Auth Personal Token) |
+| Property | JWT | APT (Auth Personal Token) |
 |---|---|---|
 | **Lifetime** | Short, configurable | Long, revocable |
 | **Use case** | Interactive user sessions | Server-to-server, CI/CD, AI agents |
