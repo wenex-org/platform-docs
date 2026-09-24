@@ -11,7 +11,7 @@ Each subsection below covers one configuration group. Every table lists the `val
 
 ## Secrets
 
-Cryptographic secrets used across the platform for authentication, encryption, and hashing. All five values are **auto-generated** at install time if left empty — a random string of the appropriate length is produced and stored in a Kubernetes `Secret` (or written to `.env` for local setups). In production, supply explicit values and store them in a secrets manager to ensure consistency across restarts and replicas.
+Cryptographic secrets used across the platform for authentication, encryption, and hashing. **Set all five explicitly in every deployment** and store them in a secrets manager. Nothing generates them for a local or Docker setup — `scripts/machine.sh` writes only `MACHINE_ID` — so an unset value falls back to a fixed default committed in the source (`libs/common/src/core/envs/jwt.env.ts`, `aes.env.ts`, `constants/root.constant.ts`), or for `BCRYPT_SALT` to a salt generated per process. The Helm chart fills an empty value with a random string in a Kubernetes `Secret`, but draws a new one on every render, so an upgrade replaces it and invalidates whatever the previous value signed or encrypted.
 
 | `.env` variable | `values.yaml` path | Default | Description |
 | --- | --- | --- | --- |
