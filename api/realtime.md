@@ -38,7 +38,7 @@ EMQX exposes the same topic space over two listeners. Pick whichever fits the ru
 | MQTT over TCP | `mqtt://<host>:1883` | Node.js backends, server-to-server clients |
 | MQTT over WebSocket | `ws://<host>:8083/mqtt` (`wss://` when TLS-terminated) | Browsers / frontend apps |
 
-Both use the same `mqtt` npm package; only the connection URL scheme differs. The reference frontend reads its WebSocket URL from `NUXT_PUBLIC_MQTT_WS_URL` (`ws://localhost:8083/mqtt`).
+Both use the same `mqtt` npm package; only the connection URL scheme differs. A browser app usually takes the WebSocket URL from its runtime configuration — in a Nuxt app, for example, a public variable such as `NUXT_PUBLIC_MQTT_WS_URL=ws://localhost:8083/mqtt`.
 
 ## Topics and Schemas
 
@@ -99,7 +99,7 @@ Each session also has a private set of control topics under `{identity}/{session
 
 ## Client Usage
 
-The canonical client uses the [`mqtt`](https://www.npmjs.com/package/mqtt) npm package. The reference implementation is the `useSocket` composable in the workspace's `clients/official/client-frontend/composables/useSocket.ts`; the same code runs in any Node.js backend (point it at `mqtt://host:1883` instead of the WebSocket URL).
+The canonical client uses the [`mqtt`](https://www.npmjs.com/package/mqtt) npm package. The code below is the shape a frontend socket composable (for example a Nuxt `useSocket`) takes; the same code runs in any Node.js backend (point it at `mqtt://host:1883` instead of the WebSocket URL).
 
 ### Connecting
 

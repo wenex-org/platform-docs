@@ -87,7 +87,7 @@ sequenceDiagram
     participant SVC as Services (NATS)
     participant PGW as Platform Gateway
 
-    FE->>GW: POST /- /career/businesses { ...data }
+    FE->>GW: POST /-/career/businesses { ...data }
     GW->>SVC: NATS send "before.post.career.businesses" { headers, data }
     SVC-->>GW: SyncData { body: { type: 'assign', data: enrichedData }, headers: { type: 'assign', data: { 'x-saga-session': sagaId } } }
     GW->>PGW: POST /career/businesses { ...enrichedData }
@@ -140,7 +140,7 @@ apps/gateway/src/
 Every route matching `/-/*path` is forwarded to the Platform. The `-` prefix is stripped before forwarding:
 
 ```text
-Client: POST /- /career/businesses
+Client: POST /-/career/businesses
          ↓ strips -
 Platform: POST /career/businesses
 ```
@@ -267,7 +267,7 @@ interface CqrsPayload<T = Core> {
   id: string;       // document MongoId
   ts_ms: number;    // timestamp ms
   op: 'c' | 'u' | 'd' | 'r';  // create, update, delete, restore
-  topic: string;    // "{db}.{collection}"
+  topic: string;    // Kafka topic: "mongo.{db}.{collection}"
   source: {
     name: string;
     db: string;     // Platform database name (e.g., "platform-identity")
@@ -815,7 +815,7 @@ libs/command/src/platform/
 │   ├── seeds/grants.seed.ts    # OAuth permission grants
 │   └── syncs/grants.sync.ts
 ├── context/resources/
-│   ├── seeds/configs.seed.ts  # RBAC config, validation schemas, CQRS webhook
+│   ├── seeds/configs.seed.ts  # RBAC config and AJV validation schemas
 │   └── syncs/configs.sync.ts
 ├── identity/resources/seeds/  # Initial users
 └── career/resources/
@@ -831,7 +831,7 @@ npm run platform:clean   # Remove all seeded records
 npm run platform:mock    # Insert development mock data
 ```
 
-The most important seed is the RBAC config in `context/configs`. It defines roles, permissions, and the CQRS webhook:
+The most important seed is the RBAC config in `context/configs`. It maps roles to permissions and permissions to grant subjects; the file's other entries are AJV validation schemas keyed by collection:
 
 ```typescript
 const configs: ConfigDto[] = [
@@ -851,13 +851,11 @@ const configs: ConfigDto[] = [
       },
     ],
   },
-  {
-    eid: CID,
-    key: ConfigKey.CQRS,
-    value: { webhook: `${process.env.CLIENT_BASE_URL}/cqrs` },
-  },
+  // ...AJV validation schemas (ConfigKey.LogisticLocations, ConfigKey.CareerEmployees, ...)
 ];
 ```
+
+The template seeds **no** `CQRS` entry, so the dispatcher pushes nothing to the client until one exists. To receive webhooks, add a `context/configs` row keyed `CQRS` whose `value.webhook` is the client **workers** app's `POST /cqrs` URL — not `CLIENT_BASE_URL`, which is the frontend origin. Its `value.authorization` must equal the workers' shared secret (see [CQRS Webhook Security](#cqrs-webhook-security)).
 
 ## Docker & Deployment
 

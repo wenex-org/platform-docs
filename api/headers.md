@@ -17,7 +17,7 @@ over gRPC. Anything not listed here is ignored.
 
 | Header | Value | Required | Description |
 |---|---|---|---|
-| `Authorization` | `Bearer <jwt\|apt>` | Yes* | Bearer JWT (`eyJ…`) or APT (`APT-…`). May also be supplied as the `?token=` query param or an `authorization` cookie. *Omitted only on `@IsPublic()` routes. |
+| `Authorization` | `Bearer <jwt\|apt>` | Yes* | Bearer JWT (`eyJ…`) or APT (`apt-…`). May also be supplied as the `?token=` query param or an `authorization` cookie. *Omitted only on `@IsPublic()` routes. |
 | `x-api-key` | base64 AES-encrypted `ApiToken` | Conditional | Required when the token was issued with `strict: true`. Validated by `AuthShield`; see [Authentication → the strict flag](/api/authentication#the-strict-flag-and-x-api-key). |
 
 ## Query shaping
@@ -45,7 +45,7 @@ over gRPC. Anything not listed here is ignored.
 | Header | Value | Required | Description |
 |---|---|---|---|
 | `x-can-with-policies` | truthy | No | Include the matching policy list in the `can` response. |
-| `x-can-with-id-policies` | truthy | No | Include id-level policies in the `can` response. |
+| `x-can-with-id-policies` | truthy | No | On `/auth/can`, also match grants whose subject is the token's `uid`, `aid` or `cid` at its domain. The gateway's `PolicyGuard` always sends it. |
 
 ## Distributed transactions — `essential` sagas
 

@@ -25,12 +25,12 @@ sequenceDiagram
         GW-->>C: data: {...}\n\n
     end
     Svc-->>GW: stream complete
-    GW-->>C: event: end\ndata: close\n\n
+    GW-->>C: type: close\nevent: end\n\n
 ```
 
 The gateway:
 1. Calls the gRPC `Cursor` RPC on the microservice, which returns a gRPC server-streaming response.
-2. Applies `AuthorityInterceptor` (ownership/zone filter) to each streamed item.
+2. Narrows the query up front with `AuthorityInterceptor` (ownership/zone), then passes each streamed item through the grant's `filter` output-field list (`perm.filter`).
 3. Writes each filtered item to the HTTP response as an SSE `data:` frame.
 4. Signals completion with an `event: end` frame and closes the connection.
 
@@ -54,11 +54,11 @@ data: {"id":"64a1b2c3d4e5f6a7b8c9d0e1","username":"alice",...}
 
 ```
 
-On stream completion:
+On stream completion (no `data:` line — `type: close` is a non-standard field that `EventSource` ignores, so listen for the `end` event):
 
 ```
+type: close
 event: end
-data: close
 
 ```
 

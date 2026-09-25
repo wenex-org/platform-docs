@@ -19,11 +19,8 @@ pnpm add @wenex/sdk axios
 
 Brotli compression of the query string (`config.brotli`) works out of the box — the encoder is a
 bundled dependency (`@piercefreeman/brotli-compress`). The optional `brotli-wasm` peer is needed only
-for the exported `Brotli` helper, which decodes/encodes payloads for your own use:
-
-```bash
-npm install @wenex/sdk axios            # brotli-wasm only if you call the `Brotli` helper directly
-```
+for the exported `Brotli` helper, which decodes/encodes payloads for your own use — add
+`brotli-wasm` to the install above only if you call that helper directly.
 
 ## Quick Start
 
@@ -167,7 +164,7 @@ The `config` parameter is an extension of Axios `AxiosRequestConfig`:
 ```typescript
 // type RequestConfig<T extends object = Core> = Omit<AxiosRequestConfig, "params" | "headers"> & {
   params?: {
-    zone?:  'own' | 'share' | 'group' | 'client' | string; // comma-separated
+    zone?:  Permute<Zone>; // Zone = 'own' | 'share' | 'group' | 'client'; a comma-separated list, each zone at most once ('own,share', 'client,own,share', …)
     skip?:  number;
     limit?: number;
     sort?:  Pagination<T>['sort'];
@@ -288,6 +285,7 @@ const apts = platform.auth.apts;
 // Create an APT
 const apt = await apts.create({
   name: 'my-bot',
+  expires_at: Date.now() + 30 * 24 * 60 * 60 * 1000, // required — epoch milliseconds, later than now and under a year out
   scopes: [Scope.ReadIdentityUsers],   // `Scope` enum from '@wenex/sdk/common/core' — the string 'read:identity:users' is its value
   subjects: ['bot@example.com'],
 });
@@ -303,8 +301,6 @@ await apts.deleteById(apt.id);
 ## Streaming (Cursor)
 
 ```typescript
-import { fetchEventSource } from '@microsoft/fetch-event-source';
-
 await platform.identity.users.cursor(
   { query: { status: 'active' } },
   {

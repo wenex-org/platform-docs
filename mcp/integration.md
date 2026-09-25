@@ -57,7 +57,7 @@ ssh -L 11434:localhost:11434 user@gpu-host
 
 ```bash
 # Set your auth token
-export MCP_CLIENT_APT_TOKEN="apt_..."
+export MCP_CLIENT_APT_TOKEN="apt-..."
 
 # Run the interactive client
 npx ts-node mcp-client.ts
@@ -93,11 +93,11 @@ const client = new ClientMCP({
 
 ## Authentication for MCP
 
-MCP connections require an APT (Auth Personal Token) passed as a Bearer token in the HTTP headers:
+MCP connections take a Bearer token in the HTTP headers — an APT (Auth Personal Token, the usual choice for a long-running agent) or a JWT. The server forwards the `Authorization` header to the platform, which verifies either kind the way it does for any request:
 
 ```typescript
 headers: {
-  Authorization: `Bearer ${aptToken}`,
+  Authorization: `Bearer ${token}`, // apt-… or a JWT (eyJ…)
 }
 ```
 

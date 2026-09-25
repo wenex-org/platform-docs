@@ -119,12 +119,19 @@ POST /financial/transactions/init
 | --- | :---: | --- | --- |
 | `reason` | ✅ | `TransactionReason` | `SYNC`, `DEPOSIT`, `TRANSFER`, `WITHDRAW`, `PAYMENT` |
 | `amount` | ✅ | number ≥ 0 | Amount |
-| `saga` | — | MongoId | Attach to an existing saga |
+| `saga` | — | MongoId | Ignored — always overwritten. To join an existing saga send its id in the `x-saga-session` header |
 | `payers` | — | `Pay[]` | Source wallets |
 | `payees` | — | `Pay[]` | Destination wallets |
 | `invoice` | — | MongoId | Linked invoice |
 
 Platform manages `state`, `failed_at`, `verified_at`, `canceled_at` — never set these manually during `init`.
+
+How `init`, `verify` and the TTL fit together:
+
+- **Saga binding** — `init` reads only the `x-saga-session` header. With it, the transaction joins that saga (which must exist) and inherits its `ttl`; without it, `init` starts a new saga (`ttl` from `x-saga-ttl`, else the default). Either way it writes the saga id into `saga`, replacing any body value.
+- **`init`** reserves the payers' money, stores the transaction as `PENDING`, and schedules a rollback job to fire after the saga `ttl`.
+- **`verify`** is what commits: it marks the transaction `VERIFIED`, executes the transfer, and cancels the rollback job. Without an `x-saga-session` header it then commits the transaction's saga; with one (which must equal the transaction's `saga`) the saga is left for its owner to commit. A failed transfer marks the transaction `FAILED` and aborts the saga.
+- **TTL expiry cancels** — if neither `verify` nor `abort` runs before the `ttl` elapses, the rollback job marks the transaction `CANCELLED` and releases the reserved money.
 
 ### Special Operations
 

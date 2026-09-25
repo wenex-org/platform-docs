@@ -194,7 +194,7 @@ query {
     query: {},
     populate: [{ path: "owner", select: ["username", "email"] }]
   }) {
-    data {
+    items {
       id
       username
       owner {

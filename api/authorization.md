@@ -30,7 +30,7 @@ sequenceDiagram
     PG-->>C: 403 if no matching grant
     PG->>H: permission + perms attached to req
     H->>AI: handler executes, intercept fires
-    AI-->>C: 403 if query references disallowed fields / zone
+    AI-->>C: 400 if the query uses a field outside the grant#59; 403 if no authorized group applies
     AI->>H: query refined and safe
     H-->>C: Response
 ```
@@ -40,7 +40,7 @@ sequenceDiagram
 `AuthGuard` runs first on every non-public endpoint. It:
 
 1. Extracts the bearer token from `Authorization` header, `?token=` query param, or the `authorization` cookie.
-2. If the token starts with `APT-`, resolves it from Redis and decrypts the stored `Apt` record.
+2. If the token starts with `apt` (case-insensitive; issued APTs read `apt-<suffix>`), resolves it from Redis and decrypts the stored `Apt` record.
 3. Otherwise verifies the JWT signature with `JwtService.verify<JwtToken>()`.
 4. Calls `BlacklistService.verifyToken()` — rejects the request if the session has been logged out.
 5. Passes the decoded `JwtToken` to `AuthShield.check()` — enforces the `strict` / `x-api-key` contract (see [Authentication → The strict flag](/api/authentication#the-strict-flag-and-x-api-key)).
@@ -122,7 +122,7 @@ curl -X POST http://localhost:3010/auth/can \
 | Header | Effect |
 |---|---|
 | `x-can-with-policies` | Include the matching policy list in the response |
-| `x-can-with-id-policies` | Include ID-level policies in the response |
+| `x-can-with-id-policies` | Also match grants whose subject is the token's `uid`, `aid` or `cid` at its domain (the gateway's `PolicyGuard` always sends it) |
 
 **Response:**
 
@@ -135,8 +135,8 @@ curl -X POST http://localhost:3010/auth/can \
         "subject": "admin@example.com",
         "action": "read",
         "object": "identity:users",
-        "field": ["id", "username", "email"],
-        "filter": ["owner"],
+        "field": ["username", "email"],
+        "filter": ["id", "username", "email"],
         "location": ["0.0.0.0/0"]
       }
     ]
@@ -157,8 +157,8 @@ interface Grant {
   object: Resource;      // service:resource or service:* (wildcard)
 
   // Constraints (optional)
-  field?: string[];      // Only these fields are accessible
-  filter?: string[];     // Row-level filter constraints (MongoDB query language)
+  field?: string[];      // Input fields — what a write body may set and a query may use (abacl notation)
+  filter?: string[];     // Output fields — what a response may show (abacl notation); not a row query
   location?: string[];   // IP / CIDR allowlist — grant is only active from these addresses
   time?: GrantTime[];    // Temporal restriction — array of { cron_exp, duration } windows
 }
@@ -171,8 +171,8 @@ interface Grant {
 | `subject` | `string` | ✅ | ABAC subject: `{local}@{domain}[:scope]` — `@IsSubject` requires the part before `:` to be an email |
 | `action` | `Action` | ✅ | `create`, `read`, `update`, `delete`, `restore`, `destroy`, a special action, or `any` |
 | `object` | `Resource` | ✅ | `service:collection` or `service:*` (wildcard) |
-| `field` | `string[]` | | Field-level allowlist — only these fields may be queried or returned |
-| `filter` | `string[]` | | Row-level filter notation — restricts which documents match |
+| `field` | `string[]` | | Input-field list in abacl notation (`["*", "!owner"]`) — body fields outside it are dropped; query fields must be allowed by `field` or `filter` |
+| `filter` | `string[]` | | Output-field list in abacl notation — every response is reduced to these fields. It selects no rows: see [Row restrictions](#row-restrictions-scoped-actions-and-zones) |
 | `location` | `string[]` | | IP / CIDR allowlist — grant is only active from these addresses |
 | `time` | `GrantTime[]` | | Temporal restriction — array of `{ cron_exp, duration }` windows |
 
@@ -185,22 +185,26 @@ interface Grant {
 - A grant subject is validated by `@IsSubject`: the part before an optional `:` **must be an email**
   (`local@domain`), so a bare word (`admin`, `engineering`) or an `@role` spelling is rejected with
   `subject must be a valid subject`.
-- `identity/users` stores subjects **without** the domain suffix (`user`, `admin`); the token's
-  `subject` is those words joined, and `AuthorizationModel.fixSubjects` appends `@{domain}` to each
-  one before matching, so a user with subject `admin` matches the grant `admin@example.com`.
+- `identity/users` stores subjects in the same email form (`admin@example.com` — `@IsSubject` on
+  the user DTO), and a write by a non-administrator keeps only subjects at the caller's own domain.
+  The token's `subject` is those values joined by spaces. `AuthorizationModel.fixSubjects` strips
+  `@{domain}` from each, expands role words (next point), re-appends `@{domain}` and drops subjects
+  of any other domain — so a user with subject `admin@example.com` matches the grant `admin@example.com`.
 - **Roles are expanded, not registered.** If the client has a `context/configs` row with key `RBAC`,
   its entry for the token's domain maps each role word to permission names and each permission to
   leaf subjects; the token's words are replaced by those leaves before `@{domain}` is appended.
   Without such a config, the words are the subjects. There is no `/auth/roles` endpoint.
-- Sending `x-can-with-id-policies` also adds `uid@domain`, `aid@domain` and `cid@domain`, which is
-  how a grant can name one user, app or client.
+- With `x-can-with-id-policies` the subjects also include `uid@domain`, `aid@domain` and
+  `cid@domain`, which is how a grant can name one user, app or client. The gateway's `PolicyGuard`
+  always sends that header, so such grants apply to every guarded request; a direct `POST /auth/can`
+  includes them only when it sends the header itself.
 
 | Subject | Grants Access To | Example |
 |---|---|---|
 | `role@domain` | Every token carrying that role word at that domain | `admin@example.com` |
-| `uid@domain` | One user (with `x-can-with-id-policies`) | `<uid>@example.com` |
-| `aid@domain` | One app (with `x-can-with-id-policies`) | `<aid>@example.com` |
-| `cid@domain` | One OAuth client (with `x-can-with-id-policies`) | `<cid>@example.com` |
+| `uid@domain` | One user | `<uid>@example.com` |
+| `aid@domain` | One app | `<aid>@example.com` |
+| `cid@domain` | One OAuth client | `<cid>@example.com` |
 | `local@domain:scope` | The same, restricted to one scope suffix | `admin@example.com:reports` |
 
 ### Special actions
@@ -229,10 +233,11 @@ curl -X POST http://localhost:3010/auth/grants \
     "subject": "alice@example.com",
     "action": "read",
     "object": "identity:users",
-    "field": ["id", "username", "email"],
-    "filter": ["owner"]
+    "filter": ["id", "username", "email"]
   }'
 ```
+
+Alice may read users, and every user she reads comes back reduced to `id`, `username` and `email`.
 
 ### Test a grant before creating
 
@@ -248,9 +253,18 @@ curl -X POST http://localhost:3010/auth/can \
   }'
 ```
 
-## Field restrictions — field-level access control
+## Field lists: `field` and `filter`
 
-When a grant specifies `field`, the token can **only** access those fields on read, and can **only modify** those fields on write.
+Both constraints are lists in abacl field notation — plain names, nested paths (`props.color`), `*`
+wildcards and `!` exclusions (`["*", "!owner"]`). They shape **fields**; neither one selects rows.
+
+- **`field` — what a request may send.** On create/update routes `FieldInterceptor` reduces the
+  body (each item of a bulk body) to the listed fields. A field outside the list is **silently
+  dropped**, not rejected. On reads `AuthorityInterceptor` checks every field the `query` — and
+  each `populate[].match` — uses: a field allowed by neither `field` nor `filter` fails the whole
+  request with `400 Bad Request` (`you don't have access to this fields`).
+- **`filter` — what a response may show.** `FilterInterceptor` reduces every response — `data`,
+  each entry of `items`, and each item a `/cursor` stream sends — to the listed fields.
 
 ```typescript
 {
@@ -261,51 +275,38 @@ When a grant specifies `field`, the token can **only** access those fields on re
 }
 ```
 
-| Request | Result |
+| Request body | Result |
 |---|---|
-| `{ "title": "New Title", "body": "..." }` | ✅ allowed |
-| `{ "author": "other@example.com" }` | ❌ `author` not in field list |
-| `{ "published_at": "2026-06-01" }` | ❌ `published_at` not in field list |
+| `{ "title": "New Title", "body": "..." }` | ✅ stored as sent |
+| `{ "title": "New Title", "author": "other@example.com" }` | ✅ `title` stored — `author` silently dropped |
+| `{ "published_at": "2026-06-01" }` | ⚠️ `published_at` dropped — the update carries no field |
 
-If no `field` is specified in any applicable grant, **all fields are accessible**.
+If no matching grant sets a list, every field passes. When several matching grants set one, the
+lists merge: a field any grant includes is included, and a field is excluded only when every grant
+that sets a list excludes it.
 
-## Filter restrictions — record-level access control
+## Row restrictions: scoped actions and zones
 
-When a grant specifies `filter`, the token can **only** access records matching that filter.
+No grant field is a row query. Which documents a request reaches is set by `AuthorityInterceptor`
+from two inputs: the **scope suffix of the matching grant's action**, which is the ceiling, and the
+**zone** the request asks for (`x-zone` header or `?zone=`, default `own,share`), which picks within
+it. The zones' own filters are defined in [Access Control → Zone Filtering](../getting-started/overview/key-concepts/access-control.md#zone-filtering).
 
-```typescript
-{
-  subject: "user@example.com",
-  action: "read",
-  object: "content:notes",
-  filter: ["{ owner: 'user@example.com' }"]
-}
-```
+| Matching grant action | Rows it can reach |
+|---|---|
+| `read:own` | `owner` is the caller (`uid ?? aid ?? cid`) |
+| `read:share` | the caller is in `shares[]` |
+| `read` (no suffix) | counted as `own` + `share` — owned or shared rows |
+| `read:group` | with zone `group`, every row in one of the caller's authorized `groups[]`; with `own`/`share`, the owned or shared rows in those groups |
+| `read:client` | with zone `client`, every row whose `clients[]` holds the caller's client or a coworker; otherwise what the other requested zones select |
+| `any` on `all` | whatever the requested zones select |
 
-Multiple filters in a grant are combined with **OR**:
-
-```typescript
-{
-  subject: "user@example.com",
-  action: "read",
-  object: "content:notes",
-  filter: ["{ owner: token.uid }", "{ shares: token.uid }"]
-}
-// Can read: (owner == uid) OR (uid in shares) ✅
-```
-
-### Filter syntax
-
-Filters use **MongoDB query language** with token variable substitution:
-
-```typescript
-{ "status": "published" }                               // simple match
-{ "created_at": { "$gte": "2026-01-01" } }              // comparison
-{ "tags": { "$in": ["urgent", "todo"] } }               // array
-{ "$or": [{ "owner": "uid" }, { "shares": "uid" }] }    // logical
-{ "owner": "token.uid" }                                // token variable
-{ "department": "token.department" }                    // token attribute
-```
+The same suffixes apply to every action (`update:own`, `delete:group`, …). Two further bounds hold:
+a grant scoped below `client` (and not `any`) needs at least one authorized group in the query — for
+a user token the caller's `aid` and domain by default, kept only where the user is a member — or the
+request fails `403` (`at least one authorized group is required`); and every action other than
+`read` is also limited to rows whose `clients[]` holds the caller's client or a coworker. So "users may edit only their own records" is the grant action
+`update:own` — there is no `filter: { owner: … }` form.
 
 ## Location-based access — IP restrictions
 
@@ -336,6 +337,20 @@ When a grant specifies `time`, access is only allowed during the specified windo
 }
 ```
 
+### How matching grants combine
+
+A grant matches when its subject is one of the caller's subjects and its action and object cover the
+request; the request is **granted** when at least one grant matches and the combined location and
+time checks below pass (the gateway always sends the caller's IP and timezone to `/auth/can`). A
+failed check denies the request with `403` from `PolicyGuard`.
+
+| Constraint | How the matching grants combine |
+|---|---|
+| `location` | The caller's IP must match one entry of the **union** of every matching grant's `location` list — an exact address or a CIDR range. A grant without `location` does not widen another grant's list; only when no matching grant lists one are all IPs allowed. |
+| `time` | Open when **any** window of any matching grant is open; no windows at all means always open. |
+| `field` / `filter` | Merged as in [Field lists](#field-lists-field-and-filter). |
+| action scope | The suffixes of all matching grants together set the row ceiling — see [Row restrictions](#row-restrictions-scoped-actions-and-zones). |
+
 ## Layer 4 — AuthorityInterceptor (query-time enforcement)
 
 `AuthorityInterceptor` runs **after** the controller handler executes but **before** the Mongo query reaches the database. It enforces the `Permission` object resolved by `PolicyGuard` at the query level.
@@ -360,10 +375,9 @@ PolicyGuard validates grant exists ✅
   ↓
 AuthorityInterceptor executes
   ├─ Soft-delete injection
-  ├─ Field permission checking
-  ├─ Filter injection
+  ├─ Query-field checking (field ∪ filter)
   ├─ Group membership validation
-  ├─ Zone exploit checking
+  ├─ Zone + action-scope row bounds
   ├─ Population checks
   └─ Query refinement
   ↓
@@ -374,15 +388,15 @@ Response returned
 
 ### 1. Soft-delete injection
 
-Unless the `x-exclude-soft-delete-query` header is present, the interceptor appends `{ deleted_at: null }` to every query automatically.
+The interceptor adds a not-deleted condition (`deleted_at` unset, or `restored_at` later than it) to the query — **unless** the `x-exclude-soft-delete-query` header is truthy **or** the request targets one document by `:id` or `?ref=`. Those id/ref lookups skip the condition, so they reach soft-deleted documents too. A `deleted` query field flips the condition: `deleted=true` returns only soft-deleted documents.
 
 ### 2. Field and filter enforcement
 
-For every field in the Mongo query, the interceptor validates it against the grant's `field` and `filter` allowlists. If the query references a field not covered by the grant, the request is rejected with `403 Forbidden`.
+For every field the Mongo query — and each `populate[].match` — uses, the interceptor checks the grant's `field` and `filter` lists. A field neither list allows fails the request with `400 Bad Request`. (Neither list adds anything to the query — see [Field lists](#field-lists-field-and-filter).)
 
 ### 3. Zone exploit checking
 
-The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or query param (default `own,share`). The filter each zone applies and the combination rules (`own`/`share` OR-ed, `group`/`client` AND-ed) are defined once, in [Access Control → Zone Filtering](../getting-started/overview/key-concepts/access-control.md#zone-filtering); `own` matches `owner` against `uid ?? aid ?? cid`, `client` matches `cid` against `clients[]` (there is no `client_id` field on documents).
+The zone (`own`, `share`, `group`, `client`) is set by the `x-zone` header or query param (default `own,share`), bounded by the matching grant action's scope suffix — see [Row restrictions](#row-restrictions-scoped-actions-and-zones). The filter each zone applies and the combination rules (`own`/`share` OR-ed, `group`/`client` AND-ed) are defined once, in [Access Control → Zone Filtering](../getting-started/overview/key-concepts/access-control.md#zone-filtering); `own` matches `owner` against `uid ?? aid ?? cid`, `client` matches `cid` against `clients[]` (there is no `client_id` field on documents).
 
 ### 4. Group query validation
 
@@ -402,8 +416,8 @@ Read visibility is computed from four ownership fields on every document — `ow
 `shares`, `groups`, and `clients` — selected by the request's zone. The four fields,
 each zone's match condition, and how zones combine are defined once, canonically, in
 **[Access Control](/getting-started/overview/key-concepts/access-control)**. The grants
-described below layer action, field, filter, time, and location constraints on top of
-that base visibility.
+described above bound that visibility by their action scope, and add field lists, time
+and location constraints.
 
 ## Authorization patterns
 
@@ -411,7 +425,7 @@ that base visibility.
 
 Assign roles to users and create grants per role. A role is a word in the user's `subjects[]` (`editor`), and the grant that matches it is `editor@{domain}` — see *Subject format*.
 
-**1. Roles are words, not records** — there is no role registry and no `/auth/roles` endpoint. A user carries `subjects: ["editor"]`; the token's subject becomes `editor@example.com` at authorization time, and that is the grant `subject` to write. An optional `RBAC` config on the client expands a role word into permission subjects before matching.
+**1. Roles are subjects, not records** — there is no role registry and no `/auth/roles` endpoint. A user carries `subjects: ["editor@example.com"]`, the token's subject carries the same value, and that is the grant `subject` to write. An optional `RBAC` config on the client expands a role word into permission subjects before matching.
 
 **2. Create grants for each role:**
 
@@ -426,18 +440,17 @@ curl -X POST http://localhost:3010/auth/grants \
     "object": "content:articles"
   }'
 
-# Editor: create and edit own content only
+# Editor: edit own content only (the :own suffix bounds the rows)
 curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "editor@example.com",
-    "action": "update",
-    "object": "content:articles",
-    "filter": ["{ owner: token.uid }"]
+    "action": "update:own",
+    "object": "content:articles"
   }'
 
-# Viewer: read published content only
+# Viewer: read, seeing only the public fields of each article
 curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
@@ -445,7 +458,7 @@ curl -X POST http://localhost:3010/auth/grants \
     "subject": "viewer@example.com",
     "action": "read",
     "object": "content:articles",
-    "filter": ["{ published: true }"]
+    "filter": ["id", "title", "body", "published_at"]
   }'
 ```
 
@@ -481,9 +494,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "user@example.com",
-    "action": "read",
-    "object": "identity:users",
-    "filter": ["{ owner: token.uid }"]
+    "action": "read:own",
+    "object": "identity:users"
   }'
 
 # Users can update their own records — with field restrictions
@@ -492,9 +504,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "user@example.com",
-    "action": "update",
+    "action": "update:own",
     "object": "identity:users",
-    "filter": ["{ owner: token.uid }"],
     "field": ["name", "email", "phone"]
   }'
 ```
@@ -512,7 +523,7 @@ await fetch('/identity/users/user-456', {
   method: 'PATCH',
   headers: { 'Authorization': `Bearer ${userToken}` },
   body: JSON.stringify({ name: 'Hacked' })
-});  // ❌ 403 Forbidden — not the owner
+});  // ❌ no document matches — the :own bound adds owner == caller to the query
 ```
 
 ### Pattern 3: Team / group-based access
@@ -528,10 +539,10 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "engineering@example.com",
-    "action": "read",
-    "object": "content:documentation",
-    "filter": ["{ groups: token.domain }"]
+    "action": "read:group",
+    "object": "content:documentation"
   }'
+# ...then read with x-zone: group to reach every document in the caller's authorized groups
 ```
 
 **2. Tag documents with their group:**
@@ -559,8 +570,8 @@ curl -X POST http://localhost:3010/content/documentation \
 ### Pattern 4: Client isolation (multi-tenancy)
 
 Different OAuth clients can only access their own data. A grant naming one client uses its
-`cid@domain` subject, which the token only carries when the request sends `x-can-with-id-policies`
-(see *Subject format*; the example clients below are `web-app` and `mobile-client` by cid).
+`cid@domain` subject, which the gateway's `PolicyGuard` always matches (see *Subject format*; the
+example clients below stand for the two clients' cids).
 
 ```bash
 # Web app can only access its own notes
@@ -569,9 +580,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "web-app@example.com",
-    "action": "read",
-    "object": "content:notes",
-    "filter": ["{ clients: token.cid }"]
+    "action": "read:client",
+    "object": "content:notes"
   }'
 
 # Mobile app has its own separate grant
@@ -580,13 +590,12 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "mobile-app@example.com",
-    "action": "read",
-    "object": "content:notes",
-    "filter": ["{ clients: token.cid }"]
+    "action": "read:client",
+    "object": "content:notes"
   }'
 ```
 
-Records created by the web app automatically include `"clients": ["web-app-id"]`. Mobile app requests only see notes with `mobile-app-id` in their `clients[]` array.
+Records created by the web app automatically include `"clients": ["web-app-id"]` (plus its coworkers). Read with `x-zone: client`, mobile app requests only see notes with `mobile-app-id` (or one of its coworkers) in their `clients[]` array.
 
 ### Pattern 5: Time-based access
 
@@ -692,7 +701,7 @@ curl -X POST http://localhost:3010/auth/grants \
 const apiToken = {
   cid: jwt.cid,
   client_id: jwt.client_id,
-  whitelist: ['192.168.1.0/24'],
+  whitelist: ['192.168.1.20', '10.0.0.5'], // exact addresses only — unlike grant `location`, no CIDR matching
   expiration_date: new Date('2027-06-01')
 };
 ```
@@ -718,9 +727,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "user@example.com",
-    "action": "update",
+    "action": "update:own",
     "object": "identity:users",
-    "filter": ["{ owner: token.uid }"],
     "field": ["name", "email", "phone", "avatar"]
   }'
 ```
@@ -733,12 +741,12 @@ await fetch('/identity/users/user-123', {
   body: JSON.stringify({ name: 'New Name', email: 'new@example.com' })
 });  // ✅ OK
 
-// Denied — password not in field list
+// password is not in the field list — it is silently dropped, name is stored
 await fetch('/identity/users/user-123', {
   method: 'PATCH',
   headers: { 'Authorization': `Bearer ${userToken}` },
   body: JSON.stringify({ name: 'New Name', password: 'new-password' })
-});  // ❌ 403 Forbidden
+});  // ✅ OK — only { name } reaches the service
 ```
 
 ### Pattern 8: Shared / collaborative access
@@ -746,18 +754,15 @@ await fetch('/identity/users/user-123', {
 Users explicitly share records with other users via the `shares` field.
 
 ```bash
-# Users can access their own notes and notes shared with them
+# Users can access their own notes and notes shared with them —
+# an action without a scope suffix counts as own + share
 curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "user@example.com",
     "action": "read",
-    "object": "content:notes",
-    "filter": [
-      "{ owner: token.uid }",
-      "{ shares: token.uid }"
-    ]
+    "object": "content:notes"
   }'
 ```
 
@@ -779,9 +784,9 @@ const notes = await fetch('/content/notes?zone=own,share', {
 }).then(r => r.json());
 ```
 
-### Pattern 9: Custom actions
+### Pattern 9: Special actions
 
-Applications can define permissions beyond the standard CRUD actions (`create` … `destroy`).
+Grants can name the special actions beyond CRUD (`create` … `destroy`) — see *Special actions*.
 
 ```bash
 # Only editors can publish articles
@@ -794,14 +799,14 @@ curl -X POST http://localhost:3010/auth/grants \
     "object": "content:articles"
   }'
 
-# Only managers can archive articles
+# Only managers can share files
 curl -X POST http://localhost:3010/auth/grants \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "manager@example.com",
-    "action": "archive",
-    "object": "content:articles"
+    "action": "share",
+    "object": "special:files"
   }'
 ```
 
@@ -813,11 +818,11 @@ const canPublish = await fetch('/auth/can', {
 }).then(r => r.json()).then(r => r.data.granted);
 ```
 
-Document custom actions clearly so the team understands what each one means.
+The grant DTO accepts any string as `action`, but the gateway only ever checks `Action` values (each route's `@SetPolicy`), so a grant naming any other word matches nothing except a direct `/auth/can` call.
 
 ### Pattern 10: Complex multi-condition access
 
-Combine subject, filter, field, location, and time constraints in a single grant.
+Combine an action scope, field lists, location, and time constraints in a single grant.
 
 ```bash
 curl -X POST http://localhost:3010/auth/grants \
@@ -825,12 +830,8 @@ curl -X POST http://localhost:3010/auth/grants \
   -H "Content-Type: application/json" \
   -d '{
     "subject": "manager@example.com",
-    "action": "update",
+    "action": "update:group",
     "object": "financial:invoices",
-    "filter": [
-      "{ department: token.department }",
-      "{ status: \"pending\" }"
-    ],
     "field": ["status", "notes"],
     "location": ["203.0.113.0/24", "10.0.0.0/8"],
     "time": [
@@ -839,7 +840,7 @@ curl -X POST http://localhost:3010/auth/grants \
   }'
 ```
 
-This grant allows only managers to update `status` and `notes` on pending invoices in their department, from office or VPN, during weekday business hours (Mon–Fri 09:00 for 9h).
+This grant lets managers update only `status` and `notes` on invoices in their authorized groups, from office or VPN, during weekday business hours (Mon–Fri 09:00 for 9h).
 
 ## Full example: read a user record
 
@@ -859,10 +860,10 @@ sequenceDiagram
     AS-->>GW: { granted: true, policies: [...] }
     GW->>AS: POST /auth/can { subjects only — fetch all grants }
     AS-->>GW: { granted: true, policies: [...] }
-    GW->>GW: AuthorityInterceptor — inject soft-delete, validate fields/zone
-    GW->>IS: gRPC findById { id: 64a1..., query: {deleted_at:null, owner:...} }
+    GW->>GW: AuthorityInterceptor — validate query fields, bound rows by zone and action scope
+    GW->>IS: gRPC findById { query: { id: 64a1..., $or: [owner, shares] } } — no soft-delete condition on an id lookup
     IS-->>GW: User document
-    GW-->>FE: 200 { data: { id, username, email } }
+    GW-->>FE: 200 { data: {...} } — reduced to the grant's filter fields, if any
 ```
 
 ## Debugging authorization issues
@@ -902,10 +903,10 @@ curl "http://localhost:3010/content/notes/note-123" \
 
 ```bash
 curl "http://localhost:3010/auth/grants" --get --data-urlencode 'query={"subject":"user@example.com"}' \
-  -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.items[] | {object, field}'
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq '.items[] | {action, object, field, filter}'
 ```
 
-If `field` is set, only those fields are accessible — the grant itself tells you what's allowed.
+`field` bounds what a request may send or query, `filter` bounds what a response shows, and the action's scope suffix bounds which rows are reachable — the grant itself tells you what's allowed.
 
 ### Enable debug logging
 
@@ -920,23 +921,25 @@ Set environment variable `DEBUG=wnx:policy-guard*,wnx:authority-interceptor*` to
 | `403 Forbidden` | `AuthGuard` | `strict` token without valid `x-api-key` |
 | `403 Forbidden` | `ScopeGuard` | Token scope does not cover the required scope |
 | `403 Forbidden` | `PolicyGuard` | No matching grant for this action + resource |
-| `403 Forbidden` | `AuthorityInterceptor` | Query references disallowed fields |
+| `400 Bad Request` | `AuthorityInterceptor` | Query uses a field outside the grant's `field`/`filter` lists |
+| `403 Forbidden` | `AuthorityInterceptor` | A grant scoped below `client` found no authorized group for the query |
 | `502 Bad Gateway` | `AuthorityInterceptor` | `AuthGuard` or `PolicyGuard` was not applied (internal misconfiguration) |
 
 ## Best practices
 
 1. **Use role subjects (`role@domain`) over individual identities** — easier to manage at scale
-2. **Combine multiple grants** — use OR logic with multiple filter/time windows
-3. **Limit field access** — specify exactly which fields tokens can see/modify
-4. **IP whitelist for sensitive operations** — especially for admin/manage actions
-5. **Time-bound contractor access** — access expires automatically when the window closes
-6. **Test with `/auth/can` before building UI** — verify permissions first, then build around them
-7. **Soft-delete via `delete*` methods** — use `destroy*` only for compliance cleanup
-8. **Audit access logs** — monitor who accesses what
-9. **Review grants regularly** — remove stale permissions
-10. **Document custom actions** — help the team understand your permission model
+2. **Combine multiple grants** — use OR logic with multiple time windows
+3. **Limit field access** — `filter` for the fields tokens can see, `field` for the ones they can modify
+4. **Bound rows with scoped actions** — `:own`, `:share`, `:group`, `:client` instead of broad actions
+5. **IP whitelist for sensitive operations** — especially for admin/manage actions
+6. **Time-bound contractor access** — access expires automatically when the window closes
+7. **Test with `/auth/can` before building UI** — verify permissions first, then build around them
+8. **Soft-delete via `delete*` methods** — use `destroy*` only for compliance cleanup
+9. **Audit access logs** — monitor who accesses what
+10. **Review grants regularly** — remove stale permissions
+11. **Stick to `Action` values** — a grant action the gateway never checks grants nothing
 
 ## See Also
 
 - [Authentication](/api/authentication) — Token types, issuing tokens, APTs, and the strict/x-api-key mechanism
-- [Access Control](/getting-started/overview/key-concepts/access-control) — Core ABAC model and zone filtering
+- [Access Control](/getting-started/overview/key-concepts/access-control) — Core ABAC model, ownership fields and zone filtering

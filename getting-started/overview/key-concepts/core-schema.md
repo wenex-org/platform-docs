@@ -65,7 +65,7 @@ When a document is **created**, the `OwnershipInterceptor` automatically derives
 
 When a document is **updated**, the interceptor sets `updated_by` and `updated_in` using the same token-derived logic. It does not touch `owner`, `groups`, or `clients` unless the client explicitly includes them in the request body and the ABAC grant allows it.
 
-A client may pass additional `client_id` values in `clients[]` at creation time to grant immediate read access to other applications; the interceptor merges them with the auto-injected coworker IDs.
+A client may pass additional client IDs in `clients[]` at creation time to grant immediate read access to other applications. The interceptor merges them with the auto-injected IDs only when the caller's grant for the action is scoped `client` (`create:client`) or `any` (or it holds `any` on `all`); otherwise the body's `clients[]` is replaced by the injected `[cid, ...coworkers]`.
 
 ## Soft Delete vs. Hard Delete
 

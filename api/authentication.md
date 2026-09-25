@@ -10,7 +10,7 @@ Wenex Platform supports two token types for API access.
 |---|---|---|
 | **Lifetime** | Short, configurable | Long, revocable |
 | **Use case** | Interactive user sessions | Server-to-server, CI/CD, AI agents |
-| **Bearer prefix** | `eyJ…` | `APT-…` |
+| **Bearer prefix** | `eyJ…` | `apt-…` |
 | **Backed by** | Signed JWT (HS256, symmetric `JWT_SECRET`) | Redis — key `apt:<suffix>` |
 | **Strict support** | ✅ | ✅ |
 
@@ -233,11 +233,11 @@ curl http://localhost:3010/auth/verify \
 | `coworker` | `string?` | Space-separated coworker client IDs |
 
 ::: info APT tokens
-When the Bearer value starts with `APT-`, `verify` resolves the APT from Redis (`apt:<suffix>`), decrypts it with AES, and returns the same `JwtToken` shape. The caller sees no difference.
+When the Bearer value starts with `apt` (case-insensitive; issued tokens read `apt-<suffix>`), `verify` resolves the APT from Redis (`apt:<suffix>`), decrypts it with AES, and returns the same `JwtToken` shape. The caller sees no difference.
 
 ```bash
 curl http://localhost:3010/auth/verify \
-  -H "Authorization: Bearer APT-xxxxxxxxxxxxxxxxxxxxxxxx"
+  -H "Authorization: Bearer apt-xxxxxxxxxxxxxxxxxxxxxxxx"
 ```
 :::
 
@@ -263,19 +263,19 @@ curl http://localhost:3010/auth/logout \
 ```mermaid
 sequenceDiagram
     accTitle: Logout flow
-    accDescr: GET /auth/logout extracts the session ID from the bearer token, the auth service deletes the session record from MongoDB and blacklists the session ID in Redis, and the client receives OK.
+    accDescr: GET /auth/logout extracts the session ID from the bearer token, the auth service soft-deletes the session record in MongoDB (stamping deleted_at) and blacklists the session ID in Redis, and the client receives OK.
     Client->>Logout Endpoint: GET /auth/logout<br/>+ Bearer token
     Logout Endpoint->>Auth Service: Extract session ID<br/>from token
-    Auth Service->>MongoDB: Delete session record<br/>from identity.sessions
-    MongoDB->>Auth Service: Deleted
+    Auth Service->>MongoDB: Soft-delete session record<br/>in identity.sessions (deleted_at)
+    MongoDB->>Auth Service: Soft-deleted
     Auth Service->>Redis: Blacklist session ID<br/>(key: blacklist:auth:session-id, via SessionsService.onAfterChange)
     Redis->>Auth Service: OK
-    Auth Service->>Logout Endpoint: Session deleted
+    Auth Service->>Logout Endpoint: Session soft-deleted
     Logout Endpoint->>Client: { "result": "OK" }
 ```
 
 After logout:
-1. The session is deleted from the database
+1. The session is soft-deleted (`deleted_at` is stamped; the record stays in the database)
 2. The session ID is added to a Redis blacklist
 3. Any subsequent request with that token is rejected with `403 Forbidden` — `"blacklisted"`
 4. Both JWT and APT tokens using that session are invalidated
@@ -496,7 +496,7 @@ api_token = {
     'cid': jwt_cid,
     'client_id': jwt_client_id,
     'expiration_date': (datetime.utcnow() + timedelta(days=365)).isoformat() + 'Z',
-    'whitelist': ['192.168.1.0/24']
+    'whitelist': ['192.168.1.20']  # exact addresses — a CIDR range never matches
 }
 
 aes_secret = os.environ['AES_SECRET'].encode()  # 32 bytes for AES-256
@@ -649,7 +649,7 @@ APTs are long-lived, revocable credentials stored in Redis and used for server-t
 | **Lifetime** | Short-lived (typically 1 hour) | Long-lived, configurable per token |
 | **Revocation** | Revocable — deleting the session (`/auth/logout`, or `DELETE identity/sessions/:id`) blacklists it until it would have expired | Revocable immediately by deleting the APT |
 | **Use case** | Interactive user sessions, OAuth flows | Server-to-server, CI/CD bots, AI agents |
-| **Token format** | `eyJ...` (base64 JWT) | `APT-<base62-encoded-id>` |
+| **Token format** | `eyJ...` (base64 JWT) | `apt-<base62-encoded-id>` |
 | **Refresh** | Requires new token request via `/auth/token` | APT tokens expire at `expires_at` (server default if omitted) and are revocable by deletion |
 
 ### Create an APT
@@ -674,7 +674,7 @@ curl -X POST http://localhost:3010/auth/apts \
   "data": {
     "id": "64a1b2c3d4e5f6a7b8c9d0e3",
     "name": "ci-bot",
-    "token": "APT-xxxxxxxxxxxxxxxxxxxxxxxx",
+    "token": "apt-xxxxxxxxxxxxxxxxxxxxxxxx",
     "scopes": ["read:identity:users"],
     "subjects": ["ci@example.com"],
     "created_at": "2026-05-15T00:00:00.000Z"
@@ -700,19 +700,19 @@ The `token` field is returned **only at creation**. It cannot be retrieved again
 ### Using an APT
 
 ```bash
-TOKEN="APT-xxxxxxxxxxxxxxxxxxxxxxxx"
+TOKEN="apt-xxxxxxxxxxxxxxxxxxxxxxxx"
 
 curl http://localhost:3010/identity/users \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-The platform recognizes the `APT-` prefix, resolves it from Redis, and processes the request identically to a JWT-based request.
+The platform recognizes the `apt` prefix (matched case-insensitively), resolves it from Redis, and processes the request identically to a JWT-based request.
 
 ### APT verification flow
 
-When a request arrives with `Authorization: Bearer APT-...`:
+When a request arrives with `Authorization: Bearer apt-...`:
 
-1. Extract suffix from the token (`APT-<suffix>`)
+1. Extract suffix from the token (`apt-<suffix>`)
 2. Query Redis at key `apt:<suffix>`
 3. If found: decrypt the APT record with AES
 4. Convert to JWT claims via the `aptToken()` utility
@@ -760,12 +760,12 @@ curl -X POST http://localhost:3010/auth/apts \
     "subjects": ["ci@github.example.com"]
   }'
 
-# Response includes: "token": "APT-xxxxxxxxxxxxxxxxxxxxxxxx"
+# Response includes: "token": "apt-xxxxxxxxxxxxxxxxxxxxxxxx"
 
 # 2. Store in GitHub Actions secret: ${{ secrets.WENEX_TOKEN }}
 
 # 3. Use in CI/CD workflow
-export WENEX_TOKEN="APT-xxxxxxxxxxxxxxxxxxxxxxxx"
+export WENEX_TOKEN="apt-xxxxxxxxxxxxxxxxxxxxxxxx"
 curl http://localhost:3010/content/notes \
   -H "Authorization: Bearer $WENEX_TOKEN"
 ```
@@ -1074,7 +1074,7 @@ curl -X POST http://localhost:3010/auth/apts \
   }'
 
 # 2. Store the returned token (only shown once)
-export WENEX_TOKEN="APT-xxx..."
+export WENEX_TOKEN="apt-xxx..."
 
 # 3. Use in scripts
 curl http://localhost:3010/content/notes \
@@ -1138,7 +1138,7 @@ services.AddHttpClient<WenexClient>(client => {
 response.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'strict' });
 
 // ✅ Environment variable (CI/CD or backend services)
-export WENEX_TOKEN="APT-xxx"
+export WENEX_TOKEN="apt-xxx"
 
 // ❌ localStorage — vulnerable to XSS
 localStorage.setItem('token', token);

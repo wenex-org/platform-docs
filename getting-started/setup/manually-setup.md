@@ -103,20 +103,20 @@ npm run start:dev <project-name>
 | `general` | Cross-cutting entities: activities, artifacts, comments, events, and workflows |
 | `thing` | IoT device registry, sensor definitions, and time-series metrics |
 
-**Gateway** — the public entry point that exposes REST, GraphQL, and gRPC and routes traffic to the services above:
+**Gateway** — the public entry point that exposes REST, GraphQL, and MCP (`/mcp`) and calls the services above over gRPC:
 
 | Project | Description |
 | --- | --- |
 | `gateway` | Starts the unified gateway (default port: `3010`) |
 
-**Workers** — background Kafka consumers driven by CDC events; no public REST API:
+**Workers** — background processes with no public REST API; all but `preserver` and `cleaner` consume Kafka CDC events:
 
 | Project | Description |
 | --- | --- |
-| `dispatcher` | Receives Kafka events and dispatches BullMQ jobs to other workers |
-| `observer` | Collects stats (`apps/workers/observer/src/modules/stats/`) on domain events |
-| `preserver` | An EMQX ExHook gRPC server (`apps/workers/preserver/src/modules/emqx/`) |
-| `watcher` | Mirrors platform collections per service (auth, career, conjoint, content, context, domain, identity) |
-| `publisher` | Delivers outbound messages via EMQX/MQTT, email, and SMS |
-| `logger` | Aggregates logs from all services and persists them to PostgreSQL via TypeORM |
-| `cleaner` | Hard-deletes expired soft-deleted records on a scheduled basis |
+| `dispatcher` | Delivers CQRS webhooks: posts each change event to the webhook URL of every subscribed client, stashing failures in PostgreSQL for BullMQ retries |
+| `observer` | Keeps create/update/delete counters per owner in `special/stats` from change events |
+| `preserver` | The EMQX ExHook gRPC server: authenticates and authorizes MQTT clients and topic access |
+| `watcher` | Caches grants, APTs, OAuth clients, users and CQRS configs in Redis; indexes products, messages and posts in Elasticsearch |
+| `publisher` | Publishes an MQTT notification through EMQX for each change, on topics derived from the document's owner, shares, groups and clients |
+| `logger` | Persists the audit log events all services emit to PostgreSQL via TypeORM |
+| `cleaner` | Purges records older than their retention TTL — audit and stash logs (PostgreSQL), stats, metrics and saga stages (MongoDB) |

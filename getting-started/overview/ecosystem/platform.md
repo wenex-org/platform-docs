@@ -43,7 +43,7 @@ graph TB
     SVC --- ES
     WRK --- PG
     WRK --- MDB
-    GW -->|"webhooks / push"| MQ
+    WRK -->|"MQTT publish (publisher) · ExHook (preserver)"| MQ
     SVC --- MN
 ```
 

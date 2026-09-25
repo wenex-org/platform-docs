@@ -31,7 +31,7 @@ Top-level business or organization record.
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
 | `name` | ✅ | string | Business name |
-| `type` | ✅ | `BusinessType` | `SOLE_PROPRIETORSHIP`, `PARTNERSHIP`, `LLC`, `CORPORATION`, `COOPERATIVE`, `NONPROFIT` |
+| `type` | ✅ | `BusinessType` | `CHARITY`, `INSURANCE`, `GOVERNMENT`, `INDIVIDUAL`, `PARTNERSHIP`, `COOPERATIVE`, `CORPORATION`, `NONPROFIT` |
 | `status` | ✅ | `Status` | `ACTIVE`, `INACTIVE` |
 
 ### Common Optional Fields
@@ -56,13 +56,13 @@ Top-level business or organization record.
 
 ## `career/branches`
 
-Business subdivision (main branch, warehouse, office, store, etc.).
+Business subdivision — the business's origin branch or one of its other branches.
 
 ### Required Create Fields
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `type` | ✅ | `BranchType` | `MAIN`, `SECONDARY`, `WAREHOUSE`, `OFFICE`, `STORE`, `VIRTUAL` |
+| `type` | ✅ | `BranchType` | `ORIGIN`, `BRANCH` |
 | `business` | ✅ | MongoId | Parent business |
 | `status` | ✅ | `Status` | `ACTIVE`, `INACTIVE` |
 
@@ -83,7 +83,7 @@ Staff record linked to a business, optionally to a branch, manager, and services
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `type` | ✅ | `EmployeeType` | `PERMANENT`, `CONTRACT`, `PART_TIME`, `INTERN`, `FREELANCE` |
+| `type` | ✅ | `EmployeeType` | `CONTRACT`, `FULL_TIME`, `PART_TIME`, `TEMPORARY` |
 | `job_title` | ✅ | string | Role / job title |
 | `business` | ✅ | MongoId | Parent business |
 | `status` | ✅ | `Status` | `ACTIVE`, `INACTIVE` |
@@ -107,7 +107,7 @@ Customer record associated with a business.
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `type` | ✅ | `CustomerType` | `INDIVIDUAL`, `CORPORATE`, `GOVERNMENT`, `NONPROFIT` |
+| `type` | ✅ | `CustomerType` | `VIP`, `LOYAL`, `REGULAR`, `OCCASIONAL` |
 | `business` | ✅ | MongoId | Parent business |
 
 ### Population
@@ -135,7 +135,7 @@ Catalog item offered by a business, branch, or store.
 
 ### Nested `features` Object
 
-Products may have a `features` array of nested objects — each with `type` (`COLOR`, `SIZE`, `WEIGHT`, `MATERIAL`, `STYLE`, `OTHER`), `title`, and `value`. Features are embedded objects, not referenced IDs.
+Products may have a `features` array of nested objects — each with `type` (`ProductFeatureType`: `TEXT`, `RANGE`, `ORDINAL`, `DISCRETE`, `CATEGORICAL`), `title` (e.g. `Color`), and `value` (boolean, number or string). Features are embedded objects, not referenced IDs.
 
 ### Population
 
@@ -155,7 +155,7 @@ Service offering attached to a business.
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
 | `name` | ✅ | string | Service name |
-| `type` | ✅ | `ServiceType` | `ONLINE`, `OFFLINE`, `HYBRID` |
+| `type` | ✅ | `ServiceType` | `PERIODIC`, `ON_DEMAND` |
 | `status` | ✅ | `Status` | `ACTIVE`, `INACTIVE` |
 | `business` | ✅ | MongoId | Parent business |
 
@@ -176,8 +176,8 @@ Physical or logical store / warehouse.
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
 | `name` | ✅ | string | Store name |
-| `type` | ✅ | `StoreType` | `RETAIL`, `WHOLESALE`, `WAREHOUSE`, `VIRTUAL` |
-| `fork` | ✅ | `StoreFork` | Store fork classification |
+| `type` | ✅ | `StoreType` | `RETAIL`, `WHOLESALE`, `FRANCHISE`, `MARKETPLACE`, `DISTRIBUTOR`, `DROPSHIPPING` |
+| `fork` | ✅ | `StoreFork` | `ORIGIN`, `BRANCH` |
 | `business` | ✅ | MongoId | Parent business |
 
 ### Population
@@ -197,7 +197,7 @@ Inventory entry for a product.
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `type` | ✅ | `StockType` | `AVAILABLE`, `RESERVED`, `DAMAGED`, `RETURNED`, `TRANSIT` |
+| `type` | ✅ | `StockType` | `COLD`, `BULKY`, `NORMAL`, `FROZEN`, `FRAGILE`, `VALUABLE`, `HAZARDOUS` |
 | `product` | ✅ | MongoId | Parent product |
 | `inventory` | ✅ | number | Current inventory level |
 

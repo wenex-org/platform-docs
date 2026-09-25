@@ -12,7 +12,7 @@ Workers are internal background processes that consume Kafka events produced by 
 ```mermaid
 graph TD
     accTitle: Workers overview
-    accDescr: Microservices publish change events to Kafka for the dispatcher, observer, watcher, publisher and logger workers, which write to webhooks, MongoDB, Redis, EMQX and PostgreSQL. The preserver serves EMQX over gRPC and the cleaner purges MongoDB, PostgreSQL and Redis.
+    accDescr: Microservices publish change events to Kafka for the dispatcher, observer, watcher, publisher and logger workers, which write to webhooks, MongoDB, Redis, Elasticsearch, EMQX and PostgreSQL. The preserver serves EMQX over gRPC and the cleaner purges MongoDB, PostgreSQL and Redis.
     subgraph Services
         SVC["microservices\n:3020–:3150"]
     end
@@ -21,6 +21,7 @@ graph TD
         KAFKA[(Kafka)]
         MONGO[(MongoDB)]
         REDIS[(Redis)]
+        ES[(Elasticsearch)]
         PG[(PostgreSQL)]
         EMQX[(EMQX / MQTT)]
     end
@@ -43,7 +44,7 @@ graph TD
     KAFKA --> LOGG
     DISP -->|webhooks| SVC
     OBS --> MONGO
-    WATCH --> REDIS
+    WATCH --> REDIS & ES
     PUB --> EMQX
     LOGG --> PG
     PRES -->|ExHook gRPC| EMQX
@@ -57,7 +58,7 @@ graph TD
 | [Dispatcher](./dispatcher) | 4010 | Routes MongoDB change events to client webhooks via BullMQ retry queues |
 | [Observer](./observer) | 4020 | Aggregates create/update/delete statistics into `special/stats` |
 | [Preserver](./preserver) | 4030 | EMQX ExHook gRPC server — handles MQTT auth and session lifecycle |
-| [Watcher](./watcher) | 4040 | Syncs critical entities from MongoDB change events into Redis cache |
+| [Watcher](./watcher) | 4040 | Syncs grants, APTs, clients, users and configs into Redis, and products, messages and posts into Elasticsearch |
 | [Publisher](./publisher) | 4050 | Publishes MQTT messages to EMQX for entity owner/share/client topics |
 | [Logger](./logger) | 4060 | Persists audit log entries from Kafka to PostgreSQL |
 | [Cleaner](./cleaner) | 4070 | Purges expired records from MongoDB, PostgreSQL, and Redis |

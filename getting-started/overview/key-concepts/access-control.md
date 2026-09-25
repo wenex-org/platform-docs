@@ -80,7 +80,7 @@ The Platform inserts:
 - `created_by` = `token.uid ?? token.aid ?? token.cid`
 - `created_in` = `token.aid ?? token.cid`
 
-A client may pass additional client IDs in `clients[]` at creation time; the interceptor merges them with the auto-injected values.
+A client may pass additional client IDs in `clients[]` at creation time; the interceptor merges them with the auto-injected values only when the caller's grant for that action is scoped `client` (`create:client`) or `any` (or it holds `any` on `all`) — otherwise the body's `clients[]` is replaced by the injected set. The same scope ladder gates the other ownership fields: a body `owner` needs `:group` or `:client`, merging `groups[]` needs `:group` or `:client`, and `shares[]` is kept only under `:share` or wider.
 
 On **update** operations, the interceptor similarly sets `updated_by` and `updated_in` from the token.
 
@@ -152,17 +152,17 @@ After all guards pass, the **AuthorityInterceptor** (`/libs/common/src/core/inte
 
 ### Interceptor Responsibilities
 
-1. **Field Permission Checking**
-   - Extracts fields being requested (from query parameters or body)
-   - Checks if the token's grants allow access to each field
-   - If any field is denied: returns `403 Forbidden`
-   - Example: token grants cannot access `email` field → request is rejected
+1. **Query-Field Checking**
+   - Collects every field the `query` (and each `populate[].match`) uses
+   - Checks each against the matching grants' `field` and `filter` lists
+   - If a field is allowed by neither: returns `400 Bad Request`
+   - Example: grants whose lists leave out `email` → a query on `email` is rejected
 
-2. **Filter Permission Injection**
-   - Queries ABACL to get filter restrictions from grants
-   - Injects these filters into the MongoDB query
-   - Ensures only records matching the filter are returned
-   - Example: token can only read records where `owner == uid` → `{ owner: uid }` is added to query
+2. **Row Bounds from Zone and Action Scope**
+   - Adds the requested zones' filters (`owner`, `shares`, `groups`, `clients`) to the MongoDB query
+   - Caps them by the matching grant action's scope suffix — `read:own`, `read:share`, `read:group`, `read:client`; an unscoped action counts as `own` + `share`
+   - Example: a `read:own` grant → `{ owner: uid }` is added to the query whatever zone is asked for
+   - The grant's `filter` adds nothing here — it is an output-field list applied to responses ([Authorization → Row restrictions](../../../api/authorization.md#row-restrictions-scoped-actions-and-zones))
 
 3. **Population Permission Checking**
    - If request includes population (relations/references), validates access to those relations
@@ -170,9 +170,9 @@ After all guards pass, the **AuthorityInterceptor** (`/libs/common/src/core/inte
    - Removes population if denied
 
 4. **Soft-Delete Injection**
-   - Automatically adds `{ deleted_at: null }` to queries
-   - Hides soft-deleted records from all responses unless explicitly requested
-   - Ensures users cannot retrieve deleted data
+   - Adds a not-deleted condition (`deleted_at` unset, or `restored_at` later than it) to list queries
+   - Skipped when `x-exclude-soft-delete-query` is truthy **or** the request targets one document by `:id` or `?ref=` — id/ref lookups reach soft-deleted documents too
+   - A `deleted=true` query field returns only soft-deleted documents instead
 
 5. **Group Membership Validation via Redis**
    - Checks if token's `aid` or `domain` is in the record's `groups[]` field
@@ -188,175 +188,23 @@ After all guards pass, the **AuthorityInterceptor** (`/libs/common/src/core/inte
 
 The modified request continues to the service layer with:
 
-- `req.query` or `req.body.filter` updated with permission-based constraints
-- Denied fields removed from `req.body`
-- Soft-delete filter injected
+- The Mongo query carrying the zone and action-scope bounds
+- The soft-delete condition, unless skipped as above
 - All validation complete ✅
 
-If any check fails, `403 Forbidden` is returned immediately.
+Body fields outside a grant's `field` list are not this interceptor's job: `FieldInterceptor` drops them on writes (see *Write Interceptor Chain*). A failed check ends the request: `400` for a disallowed query field or a zone value naming none of the four zones, `403` when a scoped grant finds no authorized group.
 
-## Grant System
+## Grants
 
-Grants are the foundation of ABAC authorization. A grant defines: **who** (`subject`) may perform what `action` on what `object`, with optional restrictions on `field`, `filter`, `location`, and `time`.
-
-### Grant Structure
-
-```typescript
-interface Grant {
-  subject: string;        // <local>@<domain>[:scope] — a role word, uid, aid or cid as the local part
-  action: Action;         // create | read | update | delete | restore | destroy | a special action | any
-  object: Resource;       // Service and resource (e.g., "content:notes", "identity:users")
-  
-  field?: string[];       // Allowed fields — if omitted, all fields are allowed
-  filter?: string[];      // Query filter constraints (MongoDB query language)
-  location?: string[];    // IP whitelist (CIDR notation)
-  time?: GrantTime[];     // Time-based restrictions (temporal access control)
-}
-```
-
-### Subject Types
-
-Subjects in grants can be:
-
-| Type | Format | Example | Meaning |
-|---|---|---|---|
-| **Role** | `role@domain` | `admin@example.com`, `editor@example.com` | Every token carrying that role word at that domain |
-| **User ID** | `uid@domain` | `user-123@example.com` | Specific user (with `x-can-with-id-policies`) |
-| **App ID** | `aid@domain` | `my-app@example.com` | Specific app (with `x-can-with-id-policies`) |
-| **Client ID** | `cid@domain` | `oauth-client@example.com` | Specific OAuth client (with `x-can-with-id-policies`) |
-
-Every subject is `local@domain[:scope]` — `@IsSubject` requires the part before `:` to be an email,
-so `@admin` and a bare `engineering` are rejected. A role is a word in the user's `subjects[]`; the
-platform appends `@domain` at authorization time and, if the client carries an `RBAC` config
-(`context/configs`), expands the word into permission subjects first. The full rule:
-[authorization.md → Subject format](../../../api/authorization.md#subject-format).
-
-### Field Restrictions
-
-When `field` is specified, the token can **only** access those fields:
-
-```typescript
-{
-  subject: "editor@example.com",
-  action: "update",
-  object: "content:articles",
-  field: ["title", "body", "tags"]  // Can only modify these fields
-}
-```
-
-Request to write `{ title: "...", author: "..." }` → `author` is rejected ❌
-
-### Filter Restrictions
-
-When `filter` is specified, the token **can only access records matching the filter**:
-
-```typescript
-{
-  subject: "@user",
-  action: "read",
-  object: "content:articles",
-  filter: ["{ published: true }", "{ owner: token.uid }"]  // Can read published OR owned articles
-}
-```
-
-Request to list articles with `{ status: "draft" }` → filtered to only published/owned articles
-
-### Location-Based Access
-
-The `location` field enables IP-based restrictions:
-
-```typescript
-{
-  subject: "admin@example.com",
-  action: "any",
-  object: "auth:clients",
-  location: ["192.168.1.0/24", "10.0.0.5"]  // Only from these IPs
-}
-```
-
-Request from outside these IPs → `403 Forbidden`
-
-### Time-Based Restrictions
-
-The `time` field enables temporal access control:
-
-```typescript
-{
-  subject: "contractor@example.com",
-  action: "read",
-  object: "identity:users",
-  time: [ { cron_exp: "0 9 * * 1-5", duration: 32400 } ]  // Mon–Fri from 09:00, open for 9 hours (duration in seconds — authorization.md owns the shape)
-}
-```
-
-Request outside this window → `403 Forbidden`
-
-## ABACL Permission Resolution
-
-The **AccessControl Library** (Redis-backed) evaluates grants to determine if a token has permission. This is called **ABACL evaluation** (Attribute-Based Access Control List).
-
-### Permission Resolution Steps
-
-1. **Load All Grants Matching Subjects**
-   - Extract all subjects from `req.token.subject` (space-separated)
-   - Query grants where `subject` matches any of these subjects
-   - Also query grants for roles assigned to the token (from Redis RBAC config)
-   - Result: list of applicable grants
-
-2. **Evaluate Field Restrictions**
-   - For each requested field in `req.body` or query parameter:
-     - Check if any grant's `field` array includes this field
-     - If field is denied by all grants → reject request
-   - Result: set of allowed fields
-
-3. **Apply Filter Constraints**
-   - For each grant's `filter` array:
-     - Parse MongoDB query syntax
-     - Inject into request's `{ ...filter }` query
-   - If multiple grants exist:
-     - Combine with OR logic (any matching grant allows access)
-   - Result: refined query with ownership/group constraints
-
-4. **Check Location Restrictions**
-   - Extract caller IP from `X-Forwarded-For` or connection
-   - Check if IP is in all applicable grants' `location` whitelists
-   - If any grant denies by IP → reject request
-   - Result: IP validated ✅ or ❌
-
-5. **Check Time Restrictions**
-   - Get current time
-   - Check if current time is within all applicable grants' `time` windows
-   - If any grant denies by time (outside window) → reject request
-   - Result: time validated ✅ or ❌
-
-6. **Return Permission Object**
-   - Permission object contains callable predicates:
-     - `.denied` — boolean indicating if access is denied
-     - `.policies` — array of applicable grants
-     - `.filter` — combined filter constraints
-     - `.fields` — set of allowed fields
-
-### Example: Manager Reading Team Users
-
-**Token subject:** `user-123@example.com`
-
-**Applicable grants:**
-
-1. Role `@user` → can read own profile (filter: `owner == token.uid`)
-2. Role `@manager` → can read team members (filter: `department == token.department`)
-
-**Request:** GET `/identity/users`
-
-**Permission resolution:**
-
-1. Load grants for `@user` and `@manager` subjects ✅
-2. Field check: all fields allowed (no field restrictions) ✅
-3. Apply filters: `{ $or: [{ owner: "user-123@example.com" }, { department: "engineering" }] }` ✅
-4. Location check: no location restrictions ✅
-5. Time check: no time restrictions ✅
-6. Return: `{ granted: true, policies: [grant1, grant2], filter: {...} }` ✅
-
-Database returns only users matching the OR filter.
+A grant says **who** (`subject`) may perform which `action` on which `object`, optionally narrowed
+by `field`, `filter`, `location` and `time`. The grant model is specified once, in
+[Authorization](../../../api/authorization.md): the [grant structure](../../../api/authorization.md#grant-structure)
+and [subject format](../../../api/authorization.md#subject-format), the
+[field lists](../../../api/authorization.md#field-lists-field-and-filter) (`field` bounds what a
+request sends, `filter` what a response shows — neither selects rows), the
+[scoped actions](../../../api/authorization.md#row-restrictions-scoped-actions-and-zones) that cap
+which rows the zones above can reach, and
+[how several matching grants combine](../../../api/authorization.md#how-matching-grants-combine).
 
 ## Scope vs Policies vs Grants
 
@@ -365,8 +213,8 @@ The three authorization layers work together but have distinct roles:
 | Layer | What it checks | Where | Example |
 |---|---|---|---|
 | **Scope** | "Can this token use this action type at all?" | `ScopeGuard` | Token has `read:identity:*` → allowed to read identity resources |
-| **Policy** | "Does a grant exist for this action on this resource?" | `PolicyGuard` | Grant exists: `@user` can `read` `identity:users` → allowed |
-| **Authority** | "What specific records can this token access?" | `AuthorityInterceptor` | Grant has filter: only records where `owner == uid` → refined query |
+| **Policy** | "Does a grant exist for this action on this resource?" | `PolicyGuard` | Grant exists: `user@example.com` can `read` `identity:users` → allowed |
+| **Authority** | "What specific records can this token access?" | `AuthorityInterceptor` | Grant action is `read:own`: only records where `owner == uid` → refined query |
 
 ### Decision Flow
 
@@ -376,15 +224,15 @@ Request: POST /identity/users/64abc/profile
 ScopeGuard: "Does token have write:identity scope?" 
   ✅ YES (token.scope = "read:identity write:identity:users")
   ↓
-PolicyGuard: "Does a grant allow write on identity:users?"
-  ✅ YES (grant: @user can write identity:users)
+PolicyGuard: "Does a grant allow update on identity:users?"
+  ✅ YES (grant: user@example.com can update:own identity:users)
   ↓
 AuthorityInterceptor: "Which records can this token write?"
-  ✅ Filter: "owner == token.uid" (can only write own records)
+  ✅ Scope :own → query bound "owner == token.uid" (can only write own records)
   ↓
-Check filter: is `64abc` owned by token.uid?
-  ✅ YES → Operation allowed, query refined
-  ❌ NO → 403 Forbidden (not owner)
+Does `64abc` match the bounded query?
+  ✅ YES → Operation allowed
+  ❌ NO → no document matches (not owner)
 ```
 
 All three layers must pass for the request to succeed.
@@ -414,5 +262,5 @@ See [Core Schema](./core-schema) for the document fields that ABAC operates on, 
 
 ## See Also
 
-- [Authorization](/api/authorization.md) — Technical deep-dive on grants, filters, and permission resolution
+- [Authorization](/api/authorization.md) — Technical deep-dive on grants, field lists, scoped actions, and permission resolution
 - [Authentication](/api/authentication.md) — Token types, issuance, and how tokens are used in requests

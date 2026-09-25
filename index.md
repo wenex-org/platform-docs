@@ -23,8 +23,8 @@ features:
     link: /getting-started/overview/ecosystem/platform
 
   - icon: 🔗
-    title: RESTful, GraphQL, and gRPC
-    details: A unified gateway exposing REST, GraphQL, and gRPC across 14 domain microservices with a consistent CRUD surface on every collection.
+    title: RESTful, GraphQL, and MCP
+    details: A unified gateway exposing REST, GraphQL, and MCP across 14 domain microservices over gRPC, with a consistent CRUD surface on every collection.
     link: /api/rest-reference
 
   - icon: 📊

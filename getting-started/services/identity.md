@@ -26,7 +26,7 @@ Root user account. Core access-control and ownership references across the Platf
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
 | `status` | ✅ | `Status` | Account lifecycle state: `ACTIVE`, `INACTIVE` |
-| `subjects` | ✅ | `string[]` | At least one subject; values do **not** include domain suffix |
+| `subjects` | ✅ | `string[]` | At least one subject, each in email form `local@domain` (e.g. `user@example.com`) |
 | `email` or `phone` | ✅ | `string` | At least one of these two must be present |
 
 ### Optional Fields
@@ -45,7 +45,7 @@ Root user account. Core access-control and ownership references across the Platf
 ### Key Behaviors
 
 - `password` and `secret` are write-only — they are never returned in responses.
-- `subjects` stores values **without** the domain suffix (e.g. `guest`, not `guest@example.com`).
+- `subjects` stores values in email form, **with** the domain (e.g. `guest@example.com`) — `@IsSubject` rejects a bare `guest`, and a write by a non-administrator keeps only subjects at the caller's own domain.
 - Modifying `subjects` changes ABAC grant matching behavior.
 
 ## `identity/profiles`

@@ -108,7 +108,7 @@ When the Platform's `dispatcher` worker delivers a CQRS event to your client's w
   "id": "doc1",
   "ts_ms": 1747303200000,
   "op": "c",
-  "topic": "wnx-content.notes",
+  "topic": "mongo.wnx-content.notes",
   "source": { "name": "...", "db": "wnx-content", "collection": "notes" },
   "after": {
     "id": "doc1",
@@ -140,7 +140,7 @@ GET /content/notes?zone=own,client
 
 ## Full Data Lifecycle
 
-The following sequence shows the complete path from a user action in Client A through the Platform and into Client B's local database:
+The following sequence shows the complete path from a user action in Client A through the Platform and into Client B's local database. It assumes Client A's grant for the create is scoped `create:client` (or `any`): only then does the gateway merge a body `clients[]` with the injected `[cid, ...coworkers]` — under any other grant the body value is replaced, and Client B is reached only if it is already one of Client A's coworkers:
 
 ```mermaid
 sequenceDiagram

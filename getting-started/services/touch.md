@@ -116,7 +116,7 @@ Outbound SMS records.
 
 | Field | Required | Type | Description |
 | --- | :---: | --- | --- |
-| `provider` | ✅ | `SmsProvider` | `KAVENEGAR`, `MELIPAYAMAK` |
+| `provider` | ✅ | `SmsProvider` | `BALE`, `KAVENEGAR`, `MELIPAYAMAK` |
 | `message` | ✅ | string | SMS body |
 | `receptors` | ✅ | string[] | Recipient phone numbers (E.164 format) |
 

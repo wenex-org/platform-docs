@@ -112,7 +112,7 @@ Kafka is the event bus that carries CDC change events from MongoDB (via Debezium
 
 ## EMQX
 
-EMQX is the MQTT broker used by the `conjoint` service for real-time messaging. The platform registers an ExHook gRPC server (hosted by the `preserver` worker) that EMQX calls to authorize publish and subscribe actions before delivering messages.
+EMQX is the MQTT broker behind the platform's real-time notifications. Two workers use it: the `publisher` publishes a message through the EMQX HTTP API for every change event, and the `preserver` hosts the ExHook gRPC server that EMQX calls to authenticate clients and authorize publish and subscribe actions.
 
 | `.env` variable | `values.yaml` path | Default | Description |
 | --- | --- | --- | --- |
@@ -170,7 +170,7 @@ Error tracking via Sentry. When a DSN is provided, unhandled exceptions and reje
 
 ## Cleaner Worker
 
-The `cleaner` worker runs on a schedule and hard-deletes soft-deleted records once their retention period has elapsed. Each TTL value accepts a human-readable duration string (e.g., `30day`, `6months`, `2years`).
+The `cleaner` worker runs continuous background loops that purge records whose `created_at` is older than their retention period — whether or not they were soft-deleted. Each TTL value accepts a human-readable duration string (e.g., `30day`, `6months`, `2years`).
 
 | `.env` variable | `values.yaml` path | Default | Description |
 | --- | --- | --- | --- |
