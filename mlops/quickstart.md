@@ -28,7 +28,7 @@ scripts:
     repository_id: my-repo      # LakeFS repository (created automatically if absent)
     storage_namespace: s3://lakefs/my-repo  # storage backend for the repository
     source: auth.grants         # MongoDB collection: <service>.<collection>
-    batch_size: 100             # queue a task when 100+ unprocessed rows exist
+    batch_size: 100             # row threshold that queues a task (rule and bounds: Scripts → batch_size)
     tag_interval: 30 days       # create a LakeFS tag every 30 days
     commit_interval: 10 days    # commit the branch every 10 days
     condition: 'after IS NOT NULL'  # optional: only process insert/update events
@@ -102,7 +102,7 @@ workers:
   enabled: true
 ```
 
-Add the Wenex chart repository and install:
+Add the MLOps chart repository (maintainer-hosted) and install:
 
 ```bash
 helm repo add wenex-mlops https://vhidvz.github.io/charts  # the maintainer's chart host; `wenex` is the org host for the platform charts
@@ -112,9 +112,9 @@ helm upgrade --install mlops wenex-mlops/mlops -f values.yaml
 
 ## Step 4 — Verify
 
-**Check Flower** — Open the Flower UI at `http://<flower-pod>:5555`. Within 5 minutes of the **`batch_size`-th** unprocessed row (100 in the config above — `db_check` queues a task only once at least `batch_size` rows sit past the last processed id; set `batch_size: 1` to see the first write), you should see a `script_runner` task appear with status `SUCCESS`.
+**Check Flower** — Open the Flower UI at `http://<flower-pod>:5555`. Within 5 minutes of the script's [`batch_size` trigger](./scripts#config-yaml-field-reference) being met (100 rows in the config above; set `batch_size: 1` to see the first write), you should see a `script_runner` task appear with status `SUCCESS`.
 
-**Check LakeFS** — Open the LakeFS UI and navigate to your repository. You should see new commits on the `main` branch and a Delta Lake table (`grants/` directory) in the file browser.
+**Check LakeFS** — Open the LakeFS UI and navigate to your repository. You should see the Delta Lake table (`grants/` directory) on the `main` branch as uncommitted changes. The first run does not commit: the first commit comes with the first write at least one `commit_interval` (10 days in the config above) after it — see [Scripts → LakeFS Versioning Lifecycle](./scripts#lakefs-versioning-lifecycle).
 
 **Check PostgreSQL** — The archive table `auth.grants` will exist with rows. After the Worker processes them, `db_clean` (runs every 4 hours) purges rows up to the smallest `latest_id` any consumer of that table has recorded.
 

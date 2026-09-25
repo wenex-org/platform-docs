@@ -5,7 +5,7 @@ description: "Wenex MLOps: a pipeline from MongoDB CDC through PostgreSQL to ver
 
 # MLOps
 
-The Wenex MLOps system is a production-grade data pipeline that continuously captures change events from MongoDB via Kafka (CDC), archives them in PostgreSQL, and transforms them into versioned Delta Lake tables in LakeFS using configurable Python scripts. Once data is tagged in LakeFS, Airflow DAGs can be triggered automatically to run downstream ML workflows — including batch model training directly from the Delta Lake store.
+The Wenex MLOps system is a production-grade data pipeline that continuously captures change events from MongoDB via Kafka (CDC), archives each changed document's latest state in PostgreSQL, and transforms them into versioned Delta Lake tables in LakeFS using configurable Python scripts. Once data is tagged in LakeFS, Airflow DAGs can be triggered automatically to run downstream ML workflows — including batch model training directly from the Delta Lake store.
 
 ```mermaid
 graph LR
@@ -34,7 +34,7 @@ graph LR
 | Component | Technology | Version |
 | --- | --- | --- |
 | Task queue | Celery | 5.6.2 |
-| Data lake | LakeFS | 0.14.1 |
+| Data lake | LakeFS — Python SDK (`lakefs`) | 0.14.1 |
 | Table format | Delta Lake | 1.3.0 |
 | DAG orchestration | Apache Airflow | 3.1.6 |
 | Columnar processing | PyArrow | 18.1.0 |

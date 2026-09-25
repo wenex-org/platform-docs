@@ -30,7 +30,7 @@ graph LR
 ```
 
 1. **Beat** reads `config.yaml` and queries each script's PostgreSQL archive table every 5 minutes.
-2. When `(last_id − latest_id) ≥ batch_size` and no task is already running, Beat queues a `script_runner` Celery task.
+2. When the script's [`batch_size` trigger](#config-yaml-field-reference) is met, Beat queues a `script_runner` Celery task (the task-state check it applies first, and why it does not stop overlapping runs: [Architecture → Concurrency Model](./architecture#concurrency-model)).
 3. A **Worker** loads `scripts/<name>/__main__.py` and calls its `main(**kwargs)` function.
 4. The function returns a Polars DataFrame which the Worker merges into the LakeFS Delta Lake table.
 5. After writing, the Worker checks the Redis-tracked commit/tag timestamps and performs LakeFS versioning operations as needed.
@@ -59,7 +59,7 @@ scripts:
 | `source` | string | yes | — | The PostgreSQL archive table to read from, in `<db>.<collection>` format (e.g. `auth.grants`). This matches the Kafka CDC topic source. |
 | `repository_id` | string | yes | — | LakeFS repository name. Created automatically with `storage_namespace` if it does not exist. |
 | `storage_namespace` | string | yes | — | LakeFS storage backend for the repository. Use `s3://bucket/path` for S3-compatible stores or `local://name` for local development. |
-| `batch_size` | integer | yes | — | Minimum number of unprocessed rows required to trigger a `script_runner` task. Beat checks `(last_id − latest_id) ≥ batch_size`. |
+| `batch_size` | integer | yes | — | The trigger for a `script_runner` task. Over the archive rows past the script's `latest_id` that match `condition`, Beat requires **both** `MAX(id) − latest_id ≥ batch_size` **and** `COUNT(*) ≥ batch_size`; ids are unique, so in effect at least `batch_size` such rows must exist. Bounds under [Validation](#validation). |
 | `branch` | string | no | `main` | LakeFS branch to write Delta Lake data to. |
 | `delta_table` | string | no | `ingest` | Delta Lake table name within the repository branch. The table path becomes `s3://{repository_id}/{branch}/{delta_table}`. |
 | `tag_interval` | string | no | `30 days` | How often to create a LakeFS tag (e.g. `7 days`, `30 days`). Tags trigger Airflow DAGs via webhook. |
@@ -71,6 +71,7 @@ scripts:
 The config loader enforces:
 - All `name` values must be unique within the file.
 - `scripts/<name>/__main__.py` must exist for every entry.
+- `batch_size` must be an integer from 1 to 10,000.
 - Interval strings must match `INTERVAL_PATTERN` — `^(\d+)\s*(d|day|days|w|week|weeks|m|month|months)$` — so `30 days`, `2 weeks` and `1 month` validate and `4 hours` is rejected.
 
 ## The `main()` Function
@@ -104,14 +105,14 @@ def main(**kwargs) -> pl.DataFrame:
 | `script` | `dict` | This script's config block. Key fields: `name`, `source`, `batch_size`, `condition`, `branch`, `delta_table`, `repository_id`. |
 | `lakefs` | `dict` | LakeFS context: `{'client': Client, 'repository': Repository, 'storage_options': dict}`. The `Repository` object provides branch and tag operations; `storage_options` is passed to `DeltaTable` for direct Delta Lake access. |
 | `client` | `pymongo.MongoClient` | MongoDB client connected to the Wenex replica set. Use for lookups not available in the CDC archive. |
-| `setting` | `dict` | Mutable dict loaded from Redis for this script. Pre-populated with `latest_id`, `tag_interval`, `commit_interval` after the first run. Write state here — the Worker persists it back to Redis after `main()` returns. |
+| `setting` | `dict` | Mutable dict loaded from Redis for this script. Pre-populated with `latest_id`, `tag_interval`, `commit_interval` after the first run that returned rows. Write state here — the Worker persists it back to Redis only when `main()` returns a non-empty DataFrame (see [Return Value](#return-value)). |
 | `name` | `str` | The script name string from `config.yaml`. |
 
 ### Return Value
 
 `main()` must return a `pl.DataFrame`. The Worker merges it into Delta Lake using `source.id = target.id` as the upsert predicate — so the DataFrame **must include an `id` column** (typically the MongoDB `_id` stored as `oid` in the archive).
 
-Return an empty DataFrame (`pl.DataFrame()`) if there is nothing to process. The Worker skips the LakeFS write in that case.
+Return an empty DataFrame (`pl.DataFrame()`) if there is nothing to process. The Worker then returns early: it skips the LakeFS write **and does not persist `setting`**, so any change `main()` made to it — `latest_id` included — is discarded, and Beat keeps dispatching the same rows while the trigger holds.
 
 ## Annotated Example Script
 
@@ -160,6 +161,7 @@ def main(**kwargs):
 
         # Extend the condition to the high-water mark so we don't race with
         # the Collector writing new rows during this task execution.
+        # The LIMIT caps one run at 10,000 rows; the rest wait for the next run.
         condition += f" AND id <= {last_id}"
         cur.execute(f"""
             SELECT * FROM "{script['source']}" {condition}
@@ -167,15 +169,18 @@ def main(**kwargs):
         """)
 
         df = pl.DataFrame()
+        max_seen = latest_id
         while True:
             rows = cur.fetchmany(script['batch_size'])
             if not rows:
                 break
+            max_seen = max(max_seen, max(r[0] for r in rows))  # r[0] is the PG serial id
             df = pl.concat([df, batch(rows)])
             print(f"Processed batch of {len(rows)} rows")
 
-    # Advance the cursor so the next run doesn't reprocess these rows.
-    setting['latest_id'] = last_id
+    # Advance the cursor to the largest id actually fetched — not last_id, which
+    # the LIMIT may not have reached — so the next run resumes after these rows.
+    setting['latest_id'] = max_seen
     return df
 ```
 
@@ -199,7 +204,7 @@ After `main()` returns, the Worker handles LakeFS versioning automatically based
 
 - **Commits** create a durable, addressable checkpoint in LakeFS history.
 - **Tags** are immutable named pointers. Creating a tag fires the LakeFS action webhook, which can trigger Airflow DAGs.
-- Both intervals are tracked in the `setting` dict (persisted in Redis). The first commit/tag interval starts from the first successful run, not from deployment time.
+- Both intervals are tracked in the `setting` dict (persisted in Redis). The first commit/tag interval starts from the first run that writes data, not from deployment time: that run only schedules them, so the first commit comes with the first write at least one `commit_interval` later (the first tag likewise), never with the first write itself.
 
 ## Directory Structure
 

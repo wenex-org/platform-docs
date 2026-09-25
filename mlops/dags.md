@@ -156,7 +156,7 @@ with DAG(
 
 ### 1. Create the DAG file
 
-Place your DAG file in the `dags/` directory. Airflow auto-discovers all Python files in that directory.
+Place your DAG file in the `dags/` directory. Airflow auto-discovers all Python files in that directory. `STORAGE_OPTIONS` below is the LakeFS S3-gateway dict from [Model Training → Connecting to LakeFS](./model-training#connecting-to-lakefs).
 
 ```python
 # dags/my_pipeline.py
@@ -176,16 +176,9 @@ def process_delta_data(**context):
     branch = event.get("branch", "main")
     table  = "grants"   # your delta_table name
 
-    storage_options = {
-        "allow_http": "true",
-        "endpoint": "https://lakefs.example.com",
-        "access_key_id": "your-access-key",
-        "secret_access_key": "your-secret",
-    }
-
     dt = DeltaTable(
         f"s3://{repo}/{branch}/{table}",
-        storage_options=storage_options,
+        storage_options=STORAGE_OPTIONS,   # see Model Training → Connecting to LakeFS
     )
     dataset = dt.to_pyarrow_dataset()
 
@@ -221,10 +214,10 @@ Copy the DAG file into the Airflow DAGs folder. In the Wenex Kubernetes environm
 
 ## Airflow UI Access
 
-In a Kubernetes cluster, port-forward the Airflow webserver:
+In a Kubernetes cluster, port-forward the Airflow API server, which serves the UI in Airflow 3.x (the chart renders no `webserver` Service for 3.x; for a release named `airflow` the Service is `airflow-api-server`):
 
 ```bash
-kubectl port-forward svc/airflow-webserver 8080:8080 -n airflow
+kubectl port-forward svc/<release>-api-server 8080:8080 -n airflow
 ```
 
 Then open `http://localhost:8080`. Default credentials for development deployments are set in the Airflow `values.yaml` (typically `admin` / `admin`).

@@ -40,7 +40,7 @@ The parent chart also deploys the **Collector** pods (`main.py`) that consume Ka
 
 | Sub-chart | Default Replicas | Command | Notes |
 | --- | --- | --- | --- |
-| **beat** | 1 | `celery -A tasks beat --loglevel=info --schedule=.data/celerybeat-schedule` | Must always be exactly 1 replica. Multiple Beat instances cause duplicate task dispatches. |
+| **beat** | 1 | `celery -A tasks beat --loglevel=info --schedule=.data/celerybeat-schedule` | Exactly 1 replica — see [Scaling Workers](#scaling-workers). |
 | **flower** | 1 | `celery -A tasks flower` | Monitoring UI on port `5555`. |
 | **workers** | 3 (configurable) | `celery -A tasks worker --loglevel=info` | Stateless; can be scaled horizontally. |
 
@@ -102,6 +102,8 @@ All environment variables are set under `global.envs` in `values.yaml` and are i
 | --- | --- |
 | `CELERY_BROKER` | Celery broker URL (e.g. `redis://redis-host:6379/0`) |
 | `CELERY_BACKEND` | Celery result backend URL (same host, different DB index is fine) |
+
+Both are required — every component fails at startup if either is unset — and are used as given. Released images up to and including `1.0.6` (the `1.0.0` tag below among them) ignore both values and connect to `redis://localhost:6379/0`; the fix is newer than `1.0.6`. Celery prefixes its broker and result keys with a fixed `mlops:`, independent of `REDIS_PREFIX`.
 
 ### MongoDB
 
@@ -182,10 +184,10 @@ Base image: `apache/airflow:3.1.6-python3.12`. The image includes all dependenci
 
 ## Accessing Flower
 
-Flower runs on port `5555`. In a cluster environment, access it via port-forward:
+Flower listens on port `5555` in its pod; the `mlops-flower` Service exposes it on port `80`. In a cluster environment, access it via port-forward:
 
 ```bash
-kubectl port-forward svc/mlops-flower 5555:5555
+kubectl port-forward svc/mlops-flower 5555:80
 ```
 
 Then open `http://localhost:5555` to view active workers, task history, queues, and execution times.
